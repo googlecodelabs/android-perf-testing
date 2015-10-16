@@ -16,24 +16,29 @@
 
 package com.google.android.perftesting;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import android.view.View;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 
-public class MainActivity extends AppCompatActivity {
+import java.util.List;
+
+/**
+ * RecyclerViewActivity creates a RecyclerView and fills it with Contacts.
+ */
+public class RecyclerViewActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-    }
+        setContentView(R.layout.activity_recyclerview);
 
-    public void openRecyclerView(View view) {
-        startActivity(new Intent(this, RecyclerViewActivity.class));
-    }
+        // Create a new list of 1000 contacts.
+        List<Contact> contacts = Contact.createContactsList(1000);
 
-    public void openSimpleListView(View view) {
-        startActivity(new Intent(this, SimpleListActivity.class));
+        RecyclerView contactsView = (RecyclerView) findViewById(R.id.contactList);
+        ContactsRecyclerAdapter adapter = new ContactsRecyclerAdapter(contacts);
+        contactsView.setAdapter(adapter);
+        contactsView.setLayoutManager(new LinearLayoutManager(this));
     }
 }

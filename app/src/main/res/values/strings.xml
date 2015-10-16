@@ -1,4 +1,11 @@
 <resources>
-    <string name="app_name">AutomatedPerfTesting</string>
+    <string name="app_name">AutomatedPerformanceTesting</string>
+    <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
+    <string name="update_text">Update Text</string>
+    <string name="title_activity_simple_list">SimpleListActivity</string>
+    <string name="title_activity_recycler_view">RecyclerViewActivity</string>
+    <string name="open_recycler">Open Recycler View</string>
+    <string name="open_simpleview">Open List View</string>
+    <string name="contact_image">Contact image</string>
 </resources>

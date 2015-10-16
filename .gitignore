@@ -1,8 +1,20 @@
-*.iml
+# Gradle cache.
 .gradle
-/local.properties
-/.idea/workspace.xml
-/.idea/libraries
+
+# File system files.
 .DS_Store
+
+# AndroidStudio workspace state.
+*.iml
+/.idea
+local.properties
+
+# Build dirs.
+/app/build
 /build
+/buildSrc/build
+
+# Test run data.
 /captures
+/testdata
+/logs

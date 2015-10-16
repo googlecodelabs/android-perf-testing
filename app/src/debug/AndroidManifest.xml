@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          package="com.google.android.perftesting" >
+    <!-- Some tests results are written to external storage so they can be exported. -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <!-- Required to perform dumpsys on retail signed devices. Requires the APK to be debuggable
+         and the permission to be manually granted using ADB (which is done in the monkeyrunner
+         script. -->
+    <uses-permission android:name="android.permission.DUMP" />
+</manifest>

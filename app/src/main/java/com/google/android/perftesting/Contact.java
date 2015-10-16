@@ -13,27 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.google.android.perftesting;
 
-import android.content.Intent;
-import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
-import android.view.View;
+import java.util.ArrayList;
+import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+/**
+ * Contact represents a listing of information for
+ * a particular person to be stored in your phone.
+ */
+public class Contact {
+    private String mName;
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+    public Contact(String name) {
+        mName = name;
     }
 
-    public void openRecyclerView(View view) {
-        startActivity(new Intent(this, RecyclerViewActivity.class));
+    public String getName() {
+        return mName;
     }
 
-    public void openSimpleListView(View view) {
-        startActivity(new Intent(this, SimpleListActivity.class));
+    public static List<Contact> createContactsList(int numContacts) {
+        List<Contact> contacts = new ArrayList<>();
+
+        for (int i = 1; i <= numContacts; i++) {
+            contacts.add(new Contact("Contact " + i));
+        }
+
+        return contacts;
     }
 }

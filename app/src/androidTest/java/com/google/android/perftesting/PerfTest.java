@@ -16,24 +16,11 @@
 
 package com.google.android.perftesting;
 
-import android.content.Intent;
-import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
-import android.view.View;
+/**
+ * Used to annotate a test as having a performance component to it.
+ *
+ * TODO: Perhaps add a timeout parameter.
+ */
+public @interface PerfTest {
 
-public class MainActivity extends AppCompatActivity {
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-    }
-
-    public void openRecyclerView(View view) {
-        startActivity(new Intent(this, RecyclerViewActivity.class));
-    }
-
-    public void openSimpleListView(View view) {
-        startActivity(new Intent(this, SimpleListActivity.class));
-    }
 }
