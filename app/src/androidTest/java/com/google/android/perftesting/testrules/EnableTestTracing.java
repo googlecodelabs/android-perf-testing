@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.android.perftesting.test;
+package com.google.android.perftesting.testrules;
 
 import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;

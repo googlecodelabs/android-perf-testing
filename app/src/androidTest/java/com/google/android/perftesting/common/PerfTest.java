@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.android.perftesting;
+package com.google.android.perftesting.common;
 
 /**
  * Used to annotate a test as having a performance component to it.

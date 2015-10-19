@@ -16,7 +16,8 @@
 
 package com.google.android.perftesting;
 
-import com.google.android.perftesting.test.EnableBatteryStatsDump;
+import com.google.android.perftesting.testrules.EnableBatteryStatsDump;
+import com.google.android.perftesting.common.PerfTestingUtils;
 
 import org.junit.runner.Description;
 import org.junit.runner.Result;

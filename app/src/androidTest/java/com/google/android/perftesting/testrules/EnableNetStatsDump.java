@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.android.perftesting.test;
+package com.google.android.perftesting.testrules;
 
 import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
@@ -23,28 +23,43 @@ import org.junit.runners.model.Statement;
 import android.os.Trace;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.InputStreamReader;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static com.google.android.perftesting.PerfTestingUtils.getTestFile;
+import static com.google.android.perftesting.common.PerfTestingUtils.getTestFile;
 
 /**
- * This rule executes a dumpsys graphics data dump after performing the test. If the API level is
- * less than 23 then this rule will do nothing since this dumpsys command isn't supported.
+ * This rule resets network stats before a test and executes a dumpsys for netstats after
+ * performing the test.
  *
  * <pre>
  * @Rule
- * public EnablePostTestDumpSys mEnablePostTestDumpSys = new EnablePostTestDumpSys();
+ * public EnableNetStatsDump mEnableNetStatsDump = new EnableNetStatsDump();
  * </pre>
  */
-public class EnablePostTestDumpsys extends ExternalResource {
+public class EnableNetStatsDump extends ExternalResource {
 
-    private Logger logger = Logger.getLogger(EnablePostTestDumpsys.class.getName());
+    private Logger logger = Logger.getLogger(EnableNetStatsDump.class.getName());
 
     private String mTestName;
+
     private String mTestClass;
+
+    private File mLogFileAbsoluteLocation = null;
+
+    public EnableNetStatsDump() {
+
+    }
+
+    /**
+     * Allow the the log to be written to a specific location.
+     */
+    public EnableNetStatsDump(File logFileAbsoluteLocation) {
+        mLogFileAbsoluteLocation = logFileAbsoluteLocation;
+    }
 
     @Override
     public Statement apply(Statement base, Description description) {
@@ -55,35 +70,34 @@ public class EnablePostTestDumpsys extends ExternalResource {
 
     @Override
     public void before() {
-        try {
-            ProcessBuilder builder = new ProcessBuilder();
-            builder.command("dumpsys", "gfxinfo", "--reset",
-                    // NOTE: Using the android app BuildConfig specifically.
-                    com.google.android.perftesting.BuildConfig.APPLICATION_ID);
-            Process process = builder.start();
-            process.waitFor();
-        } catch (Exception exception) {
-            logger.log(Level.SEVERE, "Unable to reset dumpsys", exception);
+        if (android.os.Build.VERSION.SDK_INT >= 21) {
+            try {
+                ProcessBuilder builder = new ProcessBuilder();
+                builder.command("dumpsys", "netstats", "--reset");
+                Process process = builder.start();
+                process.waitFor();
+            } catch (Exception exception) {
+                logger.log(Level.SEVERE, "Unable to reset dumpsys", exception);
+            }
         }
     }
 
     public void after() {
-        if (android.os.Build.VERSION.SDK_INT >= 23) {
+        if (android.os.Build.VERSION.SDK_INT >= 21) {
             FileWriter fileWriter = null;
             BufferedReader bufferedReader = null;
             try {
-                Trace.beginSection("Taking Dumpsys");
+                Trace.beginSection("Taking netstats dumpsys");
                 ProcessBuilder processBuilder = new ProcessBuilder();
 
-                // TODO: If less than API level 23 we should remove framestats.
-                processBuilder.command("dumpsys", "gfxinfo",
-                        // NOTE: Using the android app BuildConfig specifically.
-                        com.google.android.perftesting.BuildConfig.APPLICATION_ID,
-                        "framestats");
+                processBuilder.command("dumpsys", "netstats", "full", "detail");
                 processBuilder.redirectErrorStream();
                 Process process = processBuilder.start();
-                fileWriter = new FileWriter(getTestFile(mTestClass, mTestName, "gfxinfo.dumpsys"
-                        + ".log"));
+                if (mLogFileAbsoluteLocation == null) {
+                    mLogFileAbsoluteLocation = getTestFile(mTestClass, mTestName,
+                            "netstats.dumpsys.log");
+                }
+                fileWriter = new FileWriter(mLogFileAbsoluteLocation);
                 bufferedReader = new BufferedReader(
                         new InputStreamReader(process.getInputStream()));
                 String line;
@@ -105,7 +119,6 @@ public class EnablePostTestDumpsys extends ExternalResource {
                 if (bufferedReader != null) {
                     try { bufferedReader.close(); } catch (Exception e) { e.printStackTrace(); }
                 }
-                Trace.endSection();
             }
         }
     }

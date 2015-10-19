@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package com.google.android.perftesting.test;
+package com.google.android.perftesting.testrules;
 
-import com.google.android.perftesting.PerfTestingUtils;
+import com.google.android.perftesting.common.PerfTestingUtils;
 
 import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;

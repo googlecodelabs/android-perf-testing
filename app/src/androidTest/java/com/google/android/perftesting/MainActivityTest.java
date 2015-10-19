@@ -16,10 +16,11 @@
 
 package com.google.android.perftesting;
 
-import com.google.android.perftesting.test.EnableLogcatDump;
-import com.google.android.perftesting.test.EnableNetStatsDump;
-import com.google.android.perftesting.test.EnablePostTestDumpsys;
-import com.google.android.perftesting.test.EnableTestTracing;
+import com.google.android.perftesting.testrules.EnableLogcatDump;
+import com.google.android.perftesting.testrules.EnableNetStatsDump;
+import com.google.android.perftesting.testrules.EnablePostTestDumpsys;
+import com.google.android.perftesting.testrules.EnableTestTracing;
+import com.google.android.perftesting.common.PerfTest;
 
 import android.support.test.rule.ActivityTestRule;
 import android.support.test.runner.AndroidJUnit4;

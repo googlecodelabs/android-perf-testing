@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.android.perftesting;
+package com.google.android.perftesting.common;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;

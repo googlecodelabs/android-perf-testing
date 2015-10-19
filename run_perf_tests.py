@@ -54,7 +54,7 @@ def performTest(disableAnalytics):
 
     params = dict({
         'listener': 'com.google.android.perftesting.TestListener',
-        'annotation': 'com.google.android.perftesting.PerfTest',
+        'annotation': 'com.google.android.perftesting.common.PerfTest',
         'disableAnalytics': 'true' if disableAnalytics else 'false',
     })
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.android.perftesting.test;
+package com.google.android.perftesting.testrules;
 
 import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
@@ -29,20 +29,23 @@ import java.io.InputStreamReader;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static com.google.android.perftesting.PerfTestingUtils.getTestFile;
+import static com.google.android.perftesting.common.PerfTestingUtils.getTestFile;
 
 /**
- * This rule resets network stats before a test and executes a dumpsys for netstats after
- * performing the test.
+ * This rule resets battery stats before a test and executes a dumpsys for batterystats after
+ * performing the test. If the API level is less than 21 then this rule will do nothing since
+ * this dumpsys command isn't supported. It has limited use for short tests and is meant for tests
+ * you would typically mark as Large. For short tests you can manually use this in a
+ * {@code org.junit.runner.notification.RunListener}.
  *
  * <pre>
  * @Rule
- * public EnableNetStatsDump mEnableNetStatsDump = new EnableNetStatsDump();
+ * public EnableBatteryStatsDump mEnableBatteryStatsDump = new EnableBatteryStatsDump();
  * </pre>
  */
-public class EnableNetStatsDump extends ExternalResource {
+public class EnableBatteryStatsDump extends ExternalResource {
 
-    private Logger logger = Logger.getLogger(EnableNetStatsDump.class.getName());
+    private Logger logger = Logger.getLogger(EnableBatteryStatsDump.class.getName());
 
     private String mTestName;
 
@@ -50,14 +53,12 @@ public class EnableNetStatsDump extends ExternalResource {
 
     private File mLogFileAbsoluteLocation = null;
 
-    public EnableNetStatsDump() {
-
-    }
+    public EnableBatteryStatsDump() { }
 
     /**
      * Allow the the log to be written to a specific location.
      */
-    public EnableNetStatsDump(File logFileAbsoluteLocation) {
+    public EnableBatteryStatsDump(File logFileAbsoluteLocation) {
         mLogFileAbsoluteLocation = logFileAbsoluteLocation;
     }
 
@@ -73,7 +74,7 @@ public class EnableNetStatsDump extends ExternalResource {
         if (android.os.Build.VERSION.SDK_INT >= 21) {
             try {
                 ProcessBuilder builder = new ProcessBuilder();
-                builder.command("dumpsys", "netstats", "--reset");
+                builder.command("dumpsys", "batterystats", "--reset");
                 Process process = builder.start();
                 process.waitFor();
             } catch (Exception exception) {
@@ -87,15 +88,15 @@ public class EnableNetStatsDump extends ExternalResource {
             FileWriter fileWriter = null;
             BufferedReader bufferedReader = null;
             try {
-                Trace.beginSection("Taking netstats dumpsys");
+                Trace.beginSection("Taking battery dumpsys");
                 ProcessBuilder processBuilder = new ProcessBuilder();
 
-                processBuilder.command("dumpsys", "netstats", "full", "detail");
+                processBuilder.command("dumpsys", "batterystats");
                 processBuilder.redirectErrorStream();
                 Process process = processBuilder.start();
                 if (mLogFileAbsoluteLocation == null) {
                     mLogFileAbsoluteLocation = getTestFile(mTestClass, mTestName,
-                            "netstats.dumpsys.log");
+                            "battery.dumpsys.log");
                 }
                 fileWriter = new FileWriter(mLogFileAbsoluteLocation);
                 bufferedReader = new BufferedReader(
