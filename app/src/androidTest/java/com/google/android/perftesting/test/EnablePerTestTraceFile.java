@@ -48,7 +48,9 @@ public class EnablePerTestTraceFile extends ExternalResource {
     public void before() {
         try {
             ProcessBuilder builder = new ProcessBuilder();
-            builder.command("atrace", "--async_start", "-a", BuildConfig.APPLICATION_ID);
+            builder.command("atrace", "--async_start", "-a",
+                    // NOTE: Using the android app BuildConfig specifically.
+                    com.google.android.perftesting.BuildConfig.APPLICATION_ID);
             Process process = builder.start();
             process.waitFor();
             if (process.exitValue() == 0) {
@@ -64,7 +66,9 @@ public class EnablePerTestTraceFile extends ExternalResource {
         if (aTraceInUse) {
             try {
                 ProcessBuilder builder = new ProcessBuilder();
-                builder.command("atrace", "--async_stop", "-a", BuildConfig.APPLICATION_ID);
+                builder.command("atrace", "--async_stop", "-a",
+                        // NOTE: Using the android app BuildConfig specifically.
+                        com.google.android.perftesting.BuildConfig.APPLICATION_ID);
                 Process process = builder.start();
                 process.waitFor();
             } catch (Exception ignored) {

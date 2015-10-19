@@ -29,6 +29,10 @@ print 'Your ANDROID_HOME is set to: ' + androidHome
 # Uncomment this next line to hardcode your androidHome if you can't set it in your environment.
 # androidHome = '/full/path/to/android/sdk'
 
+platformTools = os.path.join(androidHome, 'platform-tools')
+currentPath = os.environ.get('PATH', '')
+os.environ['PATH'] = platformTools if currentPath == '' else currentPath + os.pathsep + platformTools
+
 if not os.path.isdir(androidHome):
   print 'Your ANDROID_HOME path doesn''t appear to be set in your environment'
   sys.exit(1)
