@@ -16,6 +16,7 @@
 
 package com.google.android.perftesting
 
+import org.apache.tools.ant.taskdefs.condition.Os
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.logging.Logger
@@ -49,10 +50,16 @@ public class RunPerfTestsTask extends DefaultTask {
             properties.load(inputStream)
         }
         def sdkDir = properties.getProperty('sdk.dir')
-        def monkeyPath = Paths.get(sdkDir, "tools", "monkeyrunner").toAbsolutePath().toString()
+
+        def monkeyExt = ''
+        if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+            monkeyExt = '.bat'
+        }
+
+        def monkeyPath = Paths.get(sdkDir, "tools", "monkeyrunner" + monkeyExt).toAbsolutePath().toString()
         def rootDir = getProject().getRootDir().getAbsolutePath()
         def monkeyScriptPath = Paths.get(rootDir, "run_perf_tests.py").toAbsolutePath().toString()
-        processBuilder.command(monkeyPath, monkeyScriptPath)
+        processBuilder.command(monkeyPath, monkeyScriptPath, rootDir)
         processBuilder.environment().put("ANDROID_HOME", sdkDir)
         processBuilder.redirectErrorStream()
         Process process = processBuilder.start()

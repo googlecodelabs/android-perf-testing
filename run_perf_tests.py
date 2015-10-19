@@ -21,6 +21,9 @@ import time
 import re
 import sys
 
+destDir = sys.argv[1:][0] or '.'
+print 'Writing logs to: ' + destDir
+
 # Imports the monkeyrunner modules used by this program.
 from com.android.monkeyrunner import MonkeyRunner, MonkeyDevice
 
@@ -64,9 +67,10 @@ def performTest(disableAnalytics):
 def performSystraceLogging():
     packageParameter = '--app=' + packageName
     systracePath = os.path.join(SDK_PATH, 'platform-tools', 'systrace', 'systrace.py')
-    systraceCommand = ['python', systracePath, packageParameter, '--time=20', '-o', 'testdata/trace.html', 'gfx', 'input', 'view', 'wm', 'am', 'sm', 'hal', 'app', 'res', 'dalvik', 'power', 'freq', 'freq', 'idle', 'load']
+    systraceCommand = ['python', systracePath, packageParameter, '--time=20', '-o', os.path.join(destDir, 'testdata', 'trace.html'),
+            'gfx', 'input', 'view', 'wm', 'am', 'sm', 'hal', 'app', 'res', 'dalvik', 'power', 'freq', 'freq', 'idle', 'load']
     print 'Executing systrace'
-    systraceLogfile = open(os.path.join('logs', 'capture_systrace.log'), 'w')
+    systraceLogfile = open(os.path.join(destDir, 'logs', 'capture_systrace.log'), 'w')
     subprocess.call(systraceCommand, stdout=systraceLogfile, stderr=subprocess.STDOUT, shell=False)
     systraceLogfile.close()
     print 'Done trace logging'
@@ -76,7 +80,7 @@ def performSystraceLogging():
 def enableDumpPermission():
     print 'Starting dump permission grant'
     dumpPermissionCommand = [os.path.join(SDK_PATH, 'platform-tools', 'adb'), 'shell', 'pm', 'grant', packageName, 'android.permission.DUMP']
-    dumpPermissionLogfile = open(os.path.join('logs', 'enable_dump_permission.log'), 'w')
+    dumpPermissionLogfile = open(os.path.join(destDir, 'logs', 'enable_dump_permission.log'), 'w')
     subprocess.call(dumpPermissionCommand, stdout=dumpPermissionLogfile, stderr=subprocess.STDOUT, shell=False)
     dumpPermissionLogfile.close()
 
@@ -100,8 +104,8 @@ def cleanHostTestDataFiles():
 def pullDeviceTestDataFiles():
     print 'Starting adb pull for test files'
     testDataLocation = '/storage/emulated/0/Android/data/' + packageName + '/files/testdata'
-    pullDeviceTestDataCommand = [os.path.join(SDK_PATH, 'platform-tools', 'adb'), 'pull', testDataLocation]
-    pullDeviceTestDataLogfile = open(os.path.join('logs', 'pull_test_files.log'), 'w')
+    pullDeviceTestDataCommand = [os.path.join(SDK_PATH, 'platform-tools', 'adb'), 'pull', testDataLocation, os.path.join(destDir)]
+    pullDeviceTestDataLogfile = open(os.path.join(destDir, 'logs', 'pull_test_files.log'), 'w')
     subprocess.call(pullDeviceTestDataCommand, stdout=pullDeviceTestDataLogfile, stderr=subprocess.STDOUT, shell=False)
     pullDeviceTestDataLogfile.close()
 
@@ -143,8 +147,8 @@ def parseDumpsysFile(filename):
 
 def analyseTestDataFiles():
     overallPassed = True
-    for dirName, subdirList, fileList in os.walk('testdata'):
-        if dirName == 'testdata':
+    for dirName, subdirList, fileList in os.walk(os.path.join(destDir, 'testdata')):
+        if dirName == os.path.join(destDir, 'testdata'):
             # in the root folder
             for fname in fileList:
                 if fname == 'batterystats.dumpsys.log':
