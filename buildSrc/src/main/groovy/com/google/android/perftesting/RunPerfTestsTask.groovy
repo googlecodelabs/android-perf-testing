@@ -22,6 +22,9 @@ import org.gradle.api.logging.Logger
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.incremental.IncrementalTaskInputs
 
+import java.nio.file.Paths
+
+
 /**
  * Defined Gradle task to execute monkeyrunner and make it easier to run automated performance
  * tests within AndroidStudio.
@@ -46,8 +49,11 @@ public class RunPerfTestsTask extends DefaultTask {
             properties.load(inputStream)
         }
         def sdkDir = properties.getProperty('sdk.dir')
-        processBuilder.command("${sdkDir}/tools/monkeyrunner", "run_perf_tests.py")
-        processBuilder.environment().put("ANDROID_HOME", sdkDir);
+        def monkeyPath = Paths.get(sdkDir, "tools", "monkeyrunner").toAbsolutePath().toString()
+        def rootDir = getProject().getRootDir().getAbsolutePath()
+        def monkeyScriptPath = Paths.get(rootDir, "run_perf_tests.py").toAbsolutePath().toString()
+        processBuilder.command(monkeyPath, monkeyScriptPath)
+        processBuilder.environment().put("ANDROID_HOME", sdkDir)
         processBuilder.redirectErrorStream()
         Process process = processBuilder.start()
         process.waitFor()
