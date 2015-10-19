@@ -34,7 +34,7 @@ public class PerfTestingUtils {
         File rootDir = getAppContext().getFilesDir();
 
         // Create a test data subdirectory.
-        File testFileDir = new File(rootDir, "testdata")
+        File testFileDir = new File(rootDir, "testdata");
         if (getTranslatedTestName(className, testName) != null) {
             testFileDir = new File(testFileDir, getTranslatedTestName(className, testName));
         }
