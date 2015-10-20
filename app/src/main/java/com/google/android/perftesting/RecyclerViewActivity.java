@@ -21,6 +21,9 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 
+import com.google.android.perftesting.contacts.Contact;
+import com.google.android.perftesting.contacts.ContactsRecyclerAdapter;
+
 import java.util.List;
 
 /**

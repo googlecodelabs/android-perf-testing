@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.android.perftesting;
+package com.google.android.perftesting.contacts;
 
 import android.content.Context;
 import android.support.v7.widget.RecyclerView;
@@ -25,6 +25,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
+import com.google.android.perftesting.R;
 
 import java.util.List;
 

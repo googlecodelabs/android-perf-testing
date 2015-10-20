@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-package com.google.android.perftesting;
+package com.google.android.perftesting.contacts;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,18 +26,18 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.bumptech.glide.Glide;
+import com.google.android.perftesting.R;
 
 import java.util.List;
 
 /**
  * ContactsArrayAdapter adapts a Contact to a View for use in a ListView.
  */
-public class ContactsArrayAdapterFixed extends ArrayAdapter<Contact> {
+public class ContactsArrayAdapter extends ArrayAdapter<Contact> {
 
     public final String TAG = "ContactsArrayAdapter";
 
-    public ContactsArrayAdapterFixed(Context context, List<Contact> contacts) {
+    public ContactsArrayAdapter(Context context, List<Contact> contacts) {
         super(context, 0, contacts);
     }
 
@@ -45,20 +47,20 @@ public class ContactsArrayAdapterFixed extends ArrayAdapter<Contact> {
         Contact contact = getItem(position);
         LayoutInflater inflater = LayoutInflater.from(getContext());
 
-        if (convertView == null) {
-            convertView = inflater.inflate(R.layout.item_contact, parent, false);
-        }
+        // This line is wrong, we're inflating a new view always instead of only if it's null.
+        // For demonstration purposes, we will leave this here to show the resulting jank.
+        convertView = inflater.inflate(R.layout.item_contact, parent, false);
 
         TextView contactName = (TextView) convertView.findViewById(R.id.contact_name);
         ImageView contactImage = (ImageView) convertView.findViewById(R.id.contact_image);
 
-        Glide.with(contactImage.getContext())
-                .load(R.drawable.bbq)
-                .fitCenter()
-                .into(contactImage);
-
         contactName.setText(contact.getName());
 
+        // Let's just create another bitmap when we need one. This makes no attempts to re-use
+        // bitmaps that were previously used in rendering past list view elements, causing a large
+        // amount of memory to be consumed as you scroll farther down the list.
+        Bitmap bm = BitmapFactory.decodeResource(convertView.getResources(), R.drawable.bbq);
+        contactImage.setImageBitmap(bm);
         return convertView;
     }
 }
