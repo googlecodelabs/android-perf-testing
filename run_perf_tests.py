@@ -86,7 +86,7 @@ def enableDumpPermission():
 
 def cleanHostTestDataFiles():
     print 'Cleaning data files'
-    folders = ['testdata', 'logs']
+    folders = [os.path.join(destDir, 'testdata'), os.path.join(destDir, 'logs')]
     for the_folder in folders:
         if os.path.isdir(the_folder):
             for the_file in os.listdir(the_folder):
