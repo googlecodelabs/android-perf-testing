@@ -1,5 +1,3 @@
-import com.google.android.perftesting.RunPerfTestsTask
-
 apply plugin: 'com.android.application'
 
 android {
@@ -36,17 +34,18 @@ dependencies {
     compile "com.android.support:support-v4:${supportLibVersion}"
     compile 'com.github.bumptech.glide:glide:3.6.1'
 
-    // Force the use of 22.2.1 of the annotations library because the app compile dependencies
+    // TODO(developer): Comment in the following dependencies to enable Espresso and related libraries in this project.
+    // Force the use of 23.1.0 of the annotations library because the app compile dependencies
     // require this version transitively, but an androidTestCompile dependency requires a different
     // version. See http://goo.gl/iH4WDq for more info.
-    androidTestCompile "com.android.support:support-annotations:${supportLibVersion}"
-    androidTestCompile 'com.android.support.test:runner:0.3'
-    androidTestCompile 'com.android.support.test:rules:0.3'
-    androidTestCompile 'com.android.support.test.espresso:espresso-core:2.2'
+    // androidTestCompile "com.android.support:support-annotations:${supportLibVersion}"
+    // androidTestCompile 'com.android.support.test:runner:0.3'
+    // androidTestCompile 'com.android.support.test:rules:0.3'
+    // androidTestCompile 'com.android.support.test.espresso:espresso-core:2.2'
 }
 
-// TODO: Consider converting to a plugin.
-project.tasks.create(name: 'runPerfTests',
-    type: RunPerfTestsTask,
-    dependsOn: [":app:installDebugAndroidTest", ":app:installDebug"])
+// TODO(developer): Comment in the following build snippet to add a gradle task to run the monkeyrunner performance testing script.
+//project.tasks.create(name: 'runPerfTests',
+//    type: RunPerfTestsTask,
+//    dependsOn: [":app:installDebugAndroidTest", ":app:installDebug"])
 

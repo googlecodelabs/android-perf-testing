@@ -16,16 +16,14 @@
 
 package com.google.android.perftesting;
 
-import com.google.android.perftesting.testrules.EnableBatteryStatsDump;
-import com.google.android.perftesting.common.PerfTestingUtils;
-
-import org.junit.runner.Description;
-import org.junit.runner.Result;
-import org.junit.runner.notification.Failure;
-import org.junit.runner.notification.RunListener;
-
 import android.content.Context;
 import android.support.annotation.NonNull;
+
+import com.google.android.perftesting.common.PerfTestingUtils;
+import com.google.android.perftesting.testrules.EnableBatteryStatsDump;
+
+import org.junit.runner.notification.Failure;
+import org.junit.runner.notification.RunListener;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -43,32 +41,33 @@ public class TestListener extends RunListener {
     public static final String TEST_DATA_SUBDIR_NAME = "testdata";
     public EnableBatteryStatsDump mEnableBatteryStatsDump;
 
-    @Override
-    public void testRunStarted(Description description) throws Exception {
-        mEnableBatteryStatsDump = new EnableBatteryStatsDump(
-                PerfTestingUtils.getTestRunFile("batterstats.dumpsys.log"));
-        mEnableBatteryStatsDump.before();
-        deleteExistingTestFilesInAppData();
-        // This isn't available until the next version of Google Play services.
-        // resetLocationRequestTracking();
-        super.testRunStarted(description);
-    }
+    // TODO(developer): Uncomment the following two methods to enable log files to be pulled as well as battery and location request information to be requested.
+//    @Override
+//    public void testRunStarted(Description description) throws Exception {
+//        mEnableBatteryStatsDump = new EnableBatteryStatsDump(
+//                PerfTestingUtils.getTestRunFile("batterstats.dumpsys.log"));
+//        mEnableBatteryStatsDump.before();
+//        deleteExistingTestFilesInAppData();
+//        // This isn't available until the next version of Google Play services.
+//        // resetLocationRequestTracking();
+//        super.testRunStarted(description);
+//    }
 
-    @Override
-    public void testRunFinished(Result result) throws Exception {
-        super.testRunFinished(result);
-
-        if (mEnableBatteryStatsDump != null) {
-            mEnableBatteryStatsDump.after();
-        }
-        try {
-            deleteExistingTestFilesInExternalData();
-        } catch (Exception ignored) {
-            // There may not be any data to delete.
-        }
-        dumpLocationRequestInformation();
-        copyTestFilesToExternalData();
-    }
+//    @Override
+//    public void testRunFinished(Result result) throws Exception {
+//        super.testRunFinished(result);
+//
+//        if (mEnableBatteryStatsDump != null) {
+//            mEnableBatteryStatsDump.after();
+//        }
+//        try {
+//            deleteExistingTestFilesInExternalData();
+//        } catch (Exception ignored) {
+//            // There may not be any data to delete.
+//        }
+//        dumpLocationRequestInformation();
+//        copyTestFilesToExternalData();
+//    }
 
     @Override
     public void testFailure(Failure failure) throws Exception {
