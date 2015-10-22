@@ -112,6 +112,9 @@ def pullDeviceTestDataFiles():
 def openApp():
     device.shell('am start -n ' + packageName + '/' + packageName + '.MainActivity')
 
+def resetGfxinfo():
+    device.shell('dumpsys gfxinfo ' + packageName + ' reset')
+
 def clearDumpsys():
     print 'Clearing dumpsys log on device'
     device.shell('dumpsys gfxinfo ' + packageName + ' reset >/dev/null')
@@ -204,6 +207,10 @@ enableDumpPermission()
 
 # Clear the dumpsys data for the next run.
 clearDumpsys()
+
+openApp()
+
+resetGfxinfo()
 
 runTestsAndTakeSystrace()
 
