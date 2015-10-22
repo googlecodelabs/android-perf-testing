@@ -69,11 +69,11 @@ public class TestListener extends RunListener {
 //        copyTestFilesToExternalData();
 //    }
 
-    @Override
-    public void testFailure(Failure failure) throws Exception {
-        super.testFailure(failure);
-        logTestFailure(failure);
-    }
+//    @Override
+//    public void testFailure(Failure failure) throws Exception {
+//        super.testFailure(failure);
+//        logTestFailure(failure);
+//    }
 
     /**
      * Move files from the app's internal file location to a location that can be read on retail
