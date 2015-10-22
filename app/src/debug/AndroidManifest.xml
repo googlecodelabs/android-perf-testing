@@ -2,10 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="com.google.android.perftesting" >
     <!-- Some tests results are written to external storage so they can be exported. -->
-    <!-- TODO(developer): Comment in the following permissions that are only needed for the performance testing harness. -->
-    <!--  uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" / -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <!-- Required to perform dumpsys on retail signed devices. Requires the APK to be debuggable
          and the permission to be manually granted using ADB (which is done in the monkeyrunner
          script. -->
-    <!-- uses-permission android:name="android.permission.DUMP" / -->
+    <uses-permission android:name="android.permission.DUMP" />
 </manifest>
