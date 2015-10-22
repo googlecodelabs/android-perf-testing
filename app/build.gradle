@@ -47,5 +47,5 @@ dependencies {
 // TODO(developer): Comment in the following build snippet to add a gradle task to run the monkeyrunner performance testing script.
 //project.tasks.create(name: 'runPerfTests',
 //    type: RunPerfTestsTask,
-//    dependsOn: [":app:installDebugAndroidTest", ":app:installDebug"])
+//    dependsOn: [":app:installDebugAndroidTest", ":app:installDebug", ":app:assembleDebug", ":app:assembleDebugAndroidTest"])
 
