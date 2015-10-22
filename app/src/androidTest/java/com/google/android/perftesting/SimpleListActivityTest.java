@@ -30,7 +30,7 @@ import org.junit.runner.RunWith;
  */
 @RunWith(AndroidJUnit4.class)
 @LargeTest
-// @PerfTest
+// @PerfTest // TODO(developer): Uncomment me.
 public class SimpleListActivityTest {
     public static final int SCROLL_TIME_IN_MILLIS = 4000;
     public static final long MAX_ADAPTER_VIEW_PROCESSING_TIME_IN_MILLIS = 500;
