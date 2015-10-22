@@ -112,9 +112,9 @@ def pullDeviceTestDataFiles():
 def openApp():
     device.shell('am start -n ' + packageName + '/' + packageName + '.MainActivity')
 
-def clearDumpsys():
-    print 'Clearing dumpsys log on device'
-    device.shell('dumpsys gfxinfo ' + packageName + ' reset >/dev/null')
+def resetGfxinfo():
+    print 'Clearing gfxinfo on device'
+    device.shell('dumpsys gfxinfo ' + packageName + ' reset')
 
 def runTestsAndTakeSystrace():
     # Create and start threads to run tests and collect tracing information.
@@ -202,8 +202,10 @@ print 'Device connected.'
 
 enableDumpPermission()
 
-# Clear the dumpsys data for the next run.
-clearDumpsys()
+openApp()
+
+# Clear the dumpsys data for the next run must be done immediately after openApp().
+resetGfxinfo()
 
 runTestsAndTakeSystrace()
 
