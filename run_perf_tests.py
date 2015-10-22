@@ -43,7 +43,9 @@ if not os.path.isdir(androidHome):
 # Your SDK path. Adjust this to your needs.
 SDK_PATH = androidHome
 DUMPSYS_FILENAME = 'dumpsys.log'
-JANK_THRESHOLD = 25 # Percentage of janky frames to detect to warn.
+
+# Percentage of janky frames to detect to warn.
+JANK_THRESHOLD = 60
 
 # sets a variable with the package's internal name
 packageName = 'com.google.android.perftesting'
