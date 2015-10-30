@@ -24,6 +24,12 @@ import sys
 destDir = sys.argv[1:][0] or '.'
 print 'Writing logs to: ' + destDir
 
+deviceId = sys.argv[1:][1] or null
+print 'Using deviceId: ' + deviceId
+
+# Organize test output by device in case multiple devices are being tested.
+destDir = os.path.join(destDir, "perftesting", deviceId)
+
 # Imports the monkeyrunner modules used by this program.
 from com.android.monkeyrunner import MonkeyRunner, MonkeyDevice
 
@@ -69,9 +75,11 @@ def performTest(disableAnalytics):
 def performSystraceLogging():
     packageParameter = '--app=' + packageName
     systracePath = os.path.join(SDK_PATH, 'platform-tools', 'systrace', 'systrace.py')
-    systraceCommand = ['python', systracePath, packageParameter, '--time=20', '-o', os.path.join(destDir, 'testdata', 'trace.html'),
-            'gfx', 'input', 'view', 'wm', 'am', 'sm', 'hal', 'app', 'res', 'dalvik', 'power', 'freq', 'freq', 'idle', 'load']
+    systraceCommand = ['python', systracePath, '--serial=' + deviceId, packageParameter,
+        '--time=20', '-o', os.path.join(destDir, 'trace.html'),
+        'gfx', 'input', 'view', 'wm', 'am', 'sm', 'hal', 'app', 'res', 'dalvik', 'power', 'freq', 'freq', 'idle', 'load']
     print 'Executing systrace'
+    print systraceCommand
     systraceLogfile = open(os.path.join(destDir, 'logs', 'capture_systrace.log'), 'w')
     subprocess.call(systraceCommand, stdout=systraceLogfile, stderr=subprocess.STDOUT, shell=False)
     systraceLogfile.close()
@@ -81,7 +89,8 @@ def performSystraceLogging():
 # permission in the androidTest AndroidManifest.xml file.
 def enableDumpPermission():
     print 'Starting dump permission grant'
-    dumpPermissionCommand = [os.path.join(SDK_PATH, 'platform-tools', 'adb'), 'shell', 'pm', 'grant', packageName, 'android.permission.DUMP']
+    dumpPermissionCommand = [os.path.join(SDK_PATH, 'platform-tools', 'adb'), '-s',
+        deviceId, 'shell', 'pm', 'grant', packageName, 'android.permission.DUMP']
     dumpPermissionLogfile = open(os.path.join(destDir, 'logs', 'enable_dump_permission.log'), 'w')
     subprocess.call(dumpPermissionCommand, stdout=dumpPermissionLogfile, stderr=subprocess.STDOUT, shell=False)
     dumpPermissionLogfile.close()
@@ -90,7 +99,8 @@ def enableDumpPermission():
 # permission in the androidTest AndroidManifest.xml file.
 def enableStoragePermission():
     print 'Starting storage permission grant'
-    storagePermissionCommand = [os.path.join(SDK_PATH, 'platform-tools', 'adb'), 'shell', 'pm', 'grant', packageName, 'android.permission.WRITE_EXTERNAL_STORAGE']
+    storagePermissionCommand = [os.path.join(SDK_PATH, 'platform-tools', 'adb'), '-s',
+        deviceId, 'shell', 'pm', 'grant', packageName, 'android.permission.WRITE_EXTERNAL_STORAGE']
     storagePermissionLogfile = open(os.path.join(destDir, 'logs', 'enable_storage_permission.log'), 'w')
     subprocess.call(storagePermissionCommand, stdout=storagePermissionLogfile, stderr=subprocess.STDOUT, shell=False)
     storagePermissionLogfile.close()
@@ -115,7 +125,8 @@ def cleanHostTestDataFiles():
 def pullDeviceTestDataFiles():
     print 'Starting adb pull for test files'
     testDataLocation = '/storage/emulated/0/Android/data/' + packageName + '/files/testdata'
-    pullDeviceTestDataCommand = [os.path.join(SDK_PATH, 'platform-tools', 'adb'), 'pull', testDataLocation, os.path.join(destDir)]
+    pullDeviceTestDataCommand = [os.path.join(SDK_PATH, 'platform-tools', 'adb'), '-s', deviceId,
+        'pull', testDataLocation, destDir]
     pullDeviceTestDataLogfile = open(os.path.join(destDir, 'logs', 'pull_test_files.log'), 'w')
     subprocess.call(pullDeviceTestDataCommand, stdout=pullDeviceTestDataLogfile, stderr=subprocess.STDOUT, shell=False)
     pullDeviceTestDataLogfile.close()
@@ -212,7 +223,7 @@ cleanHostTestDataFiles()
 
 # Connects to the current device, returning a MonkeyDevice object
 print 'Waiting for a device to be connected.'
-device = MonkeyRunner.waitForConnection()
+device = MonkeyRunner.waitForConnection(5, deviceId)
 print 'Device connected.'
 
 # Protip1: Remove the screen lock on your test devices then uncomment this like and the same one

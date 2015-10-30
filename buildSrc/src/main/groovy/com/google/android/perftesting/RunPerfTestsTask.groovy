@@ -16,9 +16,11 @@
 
 package com.google.android.perftesting
 
+import com.sun.istack.internal.Nullable
 import org.apache.tools.ant.taskdefs.condition.Os
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
+import org.gradle.api.internal.TaskOutputsInternal
 import org.gradle.api.logging.Logger
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.incremental.IncrementalTaskInputs
@@ -33,10 +35,20 @@ import java.nio.file.Paths
 public class RunPerfTestsTask extends DefaultTask {
     Logger mLogger = getLogger()
 
-    RunPerfTestsTask() {
-        super();
+    /**
+     * Default to not supplying a value unless a deviceId was set.
+     */
+    String mDeviceId = ""
+
+    public RunPerfTestsTask() {
+        super()
+        setGroup('verification')
+        setDescription("Run performance tests on a specific device.")
         // Forces this task to always run.
-        outputs.upToDateWhen { false }
+        if (deviceId != null) {
+            mDeviceId = deviceId
+        }
+        getOutputs().upToDateWhen({ return false })
     }
 
     @TaskAction
@@ -61,7 +73,7 @@ public class RunPerfTestsTask extends DefaultTask {
         def monkeyPath = Paths.get(sdkDir, "tools", "monkeyrunner" + monkeyExt).toAbsolutePath().toString()
         def rootDir = getProject().getRootDir().getAbsolutePath()
         def monkeyScriptPath = Paths.get(rootDir, "run_perf_tests.py").toAbsolutePath().toString()
-        processBuilder.command(monkeyPath, monkeyScriptPath, rootDir)
+        processBuilder.command(monkeyPath, monkeyScriptPath, rootDir, mDeviceId)
         processBuilder.environment().put("ANDROID_HOME", sdkDir)
         processBuilder.redirectErrorStream()
         Process process = processBuilder.start()
@@ -75,5 +87,14 @@ public class RunPerfTestsTask extends DefaultTask {
             throw new GradleException("Monkeyrunner script didn't complete")
         }
         mLogger.warn("Monkeyrunner complete")
+    }
+
+    public void setDeviceId(String deviceId) {
+        setDescription("Run performance tests on device with serial ${deviceId}")
+        mDeviceId = deviceId
+    }
+
+    public String getDeviceId() {
+        return mDeviceId
     }
 }

@@ -16,12 +16,12 @@
 
 package com.google.android.perftesting;
 
+import com.google.android.perftesting.contacts.Contact;
+import com.google.android.perftesting.contacts.ContactsArrayAdapterFixed;
+
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.widget.ListView;
-
-import com.google.android.perftesting.contacts.Contact;
-import com.google.android.perftesting.contacts.ContactsArrayAdapterFixed;
 
 import java.util.List;
 

@@ -76,26 +76,36 @@ public class TestListener extends RunListener {
 
         super.testRunFinished(result);
 
-        if (mEnableBatteryStatsDump != null) {
-            mEnableBatteryStatsDump.after();
+        try {
+            Log.w(LOG_TAG, "Test run finished");
+
+            if (mEnableBatteryStatsDump != null) {
+                mEnableBatteryStatsDump.after();
+            }
+
+            Log.w(LOG_TAG, "Battery stats collected.");
+
+            if (mEnableDeviceGetPropsInfo != null) {
+                mEnableDeviceGetPropsInfo.after();
+            }
+            Log.w(LOG_TAG, "getprops collected.");
+
+            dumpLocationRequestInformation();
+            Log.w(LOG_TAG, "Location request information collected.");
+
+            copyTestFilesToExternalData();
+
+            Log.w(LOG_TAG, "Done copying files to external data directory");
+
+            // Create a file indicating the test run is complete. This can be checked to ensure
+            // the extraction of files for the test run was successful.
+            File testRunFinishedFile = PerfTestingUtils.getTestRunFile("testRunComplete.log");
+            testRunFinishedFile.createNewFile();
+            Log.w(LOG_TAG, "testRunComplete file written.");
+
+        } catch (Exception e) {
+            Log.e(LOG_TAG, "Issue taking all log files after test run", e);
         }
-        Log.w(LOG_TAG, "Battery stats collected.");
-
-        if (mEnableDeviceGetPropsInfo != null) {
-            mEnableDeviceGetPropsInfo.after();
-        }
-        Log.w(LOG_TAG, "getprops collected.");
-
-        // Create a file indicating the test run is complete. This can be checked to ensure
-        // the extraction of files for the test run was successful.
-        File testRunFinishedFile = PerfTestingUtils.getTestRunFile("testRunComplete.log");
-        testRunFinishedFile.createNewFile();
-
-        dumpLocationRequestInformation();
-        Log.w(LOG_TAG, "Location request information collected.");
-
-        copyTestFilesToExternalData();
-        Log.w(LOG_TAG, "Files moved to external data diretory");
     }
 
     @Override
@@ -123,6 +133,8 @@ public class TestListener extends RunListener {
         String srcAbsolutePath = PerfTestingUtils.getTestRunDir().getAbsolutePath();
         String destAbsolutePath = externalTestFilesStorageDir.getAbsolutePath();
 
+        Log.w(LOG_TAG, "Moving test data from " + srcAbsolutePath + " to " + destAbsolutePath);
+
         processBuilder.command("cp", "-r", srcAbsolutePath, destAbsolutePath);
         processBuilder.redirectErrorStream();
         Process process = processBuilder.start();
@@ -143,9 +155,11 @@ public class TestListener extends RunListener {
                 if (errorStream != null) try { errorStream.close(); } catch (Exception ignored) {}
                 if (reader != null) try { reader.close(); } catch (Exception ignored) {}
             }
+            String errorString = errOutput.toString();
+            Log.e(LOG_TAG, errorString);
             throw new IOException("Not able to move test data to external storage directory:"
                     + " src=" + srcAbsolutePath + ", dest=" + destAbsolutePath + ", out=" +
-                    errOutput);
+                    errorString);
         }
     }
 
@@ -161,9 +175,6 @@ public class TestListener extends RunListener {
         processBuilder.redirectErrorStream();
         Process process = processBuilder.start();
         process.waitFor();
-        if (process.exitValue()!= 0) {
-            // Do nothing as this may be the first run.
-        }
     }
 
     private void deleteExistingTestFilesInAppData() throws IOException, InterruptedException {
@@ -176,9 +187,6 @@ public class TestListener extends RunListener {
         processBuilder.redirectErrorStream();
         Process process = processBuilder.start();
         process.waitFor();
-        if (process.exitValue()!= 0) {
-            // Do nothing as this may be the first run.
-        }
     }
 
     private void resetLocationRequestTracking() throws IOException, InterruptedException {
@@ -189,9 +197,6 @@ public class TestListener extends RunListener {
         processBuilder.redirectErrorStream();
         Process process = processBuilder.start();
         process.waitFor();
-        if (process.exitValue()!= 0) {
-            throw new IOException("Not able to reset location provider logging info.");
-        }
     }
 
     private void dumpLocationRequestInformation() throws IOException, InterruptedException {

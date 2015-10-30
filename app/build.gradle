@@ -1,4 +1,4 @@
-import com.google.android.perftesting.RunPerfTestsTask
+import com.google.android.perftesting.PerfTestTaskGeneratorPlugin
 
 apply plugin: 'com.android.application'
 
@@ -46,8 +46,6 @@ dependencies {
      androidTestCompile 'com.android.support.test.espresso:espresso-core:2.2'
 }
 
-// TODO(developer): Comment in the following build snippet to add a gradle task to run the monkeyrunner performance testing script.
-project.tasks.create(name: 'runPerfTests',
-    type: RunPerfTestsTask,
-    dependsOn: [":app:installDebugAndroidTest", ":app:installDebug", ":app:assembleDebug", ":app:assembleDebugAndroidTest"])
-
+// Create performance testing tasks for all connected Android devices using a Gradle plugin defined
+// in the buildSrc directory.
+apply plugin: PerfTestTaskGeneratorPlugin
