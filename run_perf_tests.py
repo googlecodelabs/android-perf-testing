@@ -215,6 +215,11 @@ print 'Waiting for a device to be connected.'
 device = MonkeyRunner.waitForConnection()
 print 'Device connected.'
 
+# Protip1: Remove the screen lock on your test devices then uncomment this like and the same one
+# farther down. This will prevent you from worrying about whether your device display has gone
+# to sleep. Alternatively, you can use the "never sleep when charging" developer option.
+# device.press("KEYCODE_POWER", "DOWN_AND_UP")
+
 enableDumpPermission()
 enableStoragePermission()
 
@@ -224,6 +229,9 @@ openApp()
 resetGfxinfo()
 
 runTestsAndTakeSystrace()
+
+# Protip1: See comment above.
+# device.press("KEYCODE_POWER", "DOWN_AND_UP")
 
 pullDeviceTestDataFiles()
 
