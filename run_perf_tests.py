@@ -86,6 +86,15 @@ def enableDumpPermission():
     subprocess.call(dumpPermissionCommand, stdout=dumpPermissionLogfile, stderr=subprocess.STDOUT, shell=False)
     dumpPermissionLogfile.close()
 
+# Enable the Storage permission on the debuggable test APK (test APK because we declared the
+# permission in the androidTest AndroidManifest.xml file.
+def enableStoragePermission():
+    print 'Starting storage permission grant'
+    storagePermissionCommand = [os.path.join(SDK_PATH, 'platform-tools', 'adb'), 'shell', 'pm', 'grant', packageName, 'android.permission.WRITE_EXTERNAL_STORAGE']
+    storagePermissionLogfile = open(os.path.join(destDir, 'logs', 'enable_storage_permission.log'), 'w')
+    subprocess.call(storagePermissionCommand, stdout=storagePermissionLogfile, stderr=subprocess.STDOUT, shell=False)
+    storagePermissionLogfile.close()
+
 def cleanHostTestDataFiles():
     print 'Cleaning data files'
     folders = [os.path.join(destDir, 'testdata'), os.path.join(destDir, 'logs')]
@@ -188,6 +197,10 @@ def analyseTestDataFiles():
                 print 'PASS. No issues detected.'
             else:
                 overallPassed = False
+    testRunCompleteFile = os.path.join(destDir, 'testdata', 'testRunComplete.log')
+    if not os.path.isfile(testRunCompleteFile):
+        overallPassed = False
+        print '\nFAIL: Could not find file indicating the test run completed.'
     if overallPassed:
         print '\nOVERALL: PASSED.'
         return 0
@@ -203,6 +216,7 @@ device = MonkeyRunner.waitForConnection()
 print 'Device connected.'
 
 enableDumpPermission()
+enableStoragePermission()
 
 openApp()
 

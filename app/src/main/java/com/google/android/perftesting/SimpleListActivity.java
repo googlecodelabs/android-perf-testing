@@ -21,7 +21,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.widget.ListView;
 
 import com.google.android.perftesting.contacts.Contact;
-import com.google.android.perftesting.contacts.ContactsArrayAdapter;
+import com.google.android.perftesting.contacts.ContactsArrayAdapterFixed;
 
 import java.util.List;
 
@@ -39,7 +39,7 @@ public class SimpleListActivity extends AppCompatActivity {
         List<Contact> contacts = Contact.createContactsList(1000);
 
         ListView listView = (ListView) findViewById(android.R.id.list);
-        ContactsArrayAdapter adapter = new ContactsArrayAdapter(this, contacts);
+        ContactsArrayAdapterFixed adapter = new ContactsArrayAdapterFixed(this, contacts);
         listView.setAdapter(adapter);
     }
 }
