@@ -16,6 +16,12 @@
 
 package com.google.android.perftesting;
 
+import android.support.test.rule.ActivityTestRule;
+import android.support.test.runner.AndroidJUnit4;
+import android.test.ActivityInstrumentationTestCase2;
+import android.test.suitebuilder.annotation.LargeTest;
+import android.widget.ListView;
+
 import com.google.android.perftesting.common.PerfTest;
 import com.google.android.perftesting.testrules.EnableLogcatDump;
 import com.google.android.perftesting.testrules.EnableNetStatsDump;
@@ -27,12 +33,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
-
-import android.support.test.rule.ActivityTestRule;
-import android.support.test.runner.AndroidJUnit4;
-import android.test.ActivityInstrumentationTestCase2;
-import android.test.suitebuilder.annotation.LargeTest;
-import android.widget.ListView;
 
 import java.util.concurrent.TimeUnit;
 

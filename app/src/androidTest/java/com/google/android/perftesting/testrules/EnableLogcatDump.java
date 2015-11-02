@@ -16,13 +16,13 @@
 
 package com.google.android.perftesting.testrules;
 
+import android.os.Trace;
+
 import com.google.android.perftesting.common.PerfTestingUtils;
 
 import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
-
-import android.os.Trace;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
