@@ -21,6 +21,9 @@ import time
 import re
 import sys
 
+# Imports the monkeyrunner modules used by this program.
+from com.android.monkeyrunner import MonkeyRunner, MonkeyDevice
+
 destDir = sys.argv[1:][0] or '.'
 print 'Writing logs to: ' + destDir
 
@@ -30,21 +33,20 @@ print 'Using deviceId: ' + deviceId
 # Organize test output by device in case multiple devices are being tested.
 destDir = os.path.join(destDir, "perftesting", deviceId)
 
-# Imports the monkeyrunner modules used by this program.
-from com.android.monkeyrunner import MonkeyRunner, MonkeyDevice
-
 androidHome = os.environ['ANDROID_HOME']
 print 'Your ANDROID_HOME is set to: ' + androidHome
-# Uncomment this next line to hardcode your androidHome if you can't set it in your environment.
+# Uncomment this next line to hardcode your androidHome if you can't set it in
+# your environment.
 # androidHome = '/full/path/to/android/sdk'
 
 platformTools = os.path.join(androidHome, 'platform-tools')
 currentPath = os.environ.get('PATH', '')
-os.environ['PATH'] = platformTools if currentPath == '' else currentPath + os.pathsep + platformTools
+os.environ['PATH'] = (platformTools if currentPath == '' else currentPath +
+                      os.pathsep + platformTools)
 
 if not os.path.isdir(androidHome):
-  print 'Your ANDROID_HOME path doesn''t appear to be set in your environment'
-  sys.exit(1)
+    print 'Your ANDROID_HOME path do not appear to be set in your environment'
+    sys.exit(1)
 
 # Your SDK path. Adjust this to your needs.
 SDK_PATH = androidHome
@@ -57,6 +59,7 @@ JANK_THRESHOLD = 60
 packageName = 'com.google.android.perftesting'
 testPackageName = packageName + '.test'
 
+
 def performTest(disableAnalytics):
     print 'Starting test'
 
@@ -66,48 +69,79 @@ def performTest(disableAnalytics):
         'disableAnalytics': 'true' if disableAnalytics else 'false',
     })
 
-    testRunner = packageName + '.test' + '/android.support.test.runner.AndroidJUnitRunner'
+    testRunner = (packageName + '.test' +
+                  '/android.support.test.runner.AndroidJUnitRunner')
 
     # Run the test and print the timing result.
     print device.instrument(testRunner, params)['stream']
     print 'Done running tests'
 
+
 def performSystraceLogging():
     packageParameter = '--app=' + packageName
-    systracePath = os.path.join(SDK_PATH, 'platform-tools', 'systrace', 'systrace.py')
-    systraceCommand = ['python', systracePath, '--serial=' + deviceId, packageParameter,
-        '--time=20', '-o', os.path.join(destDir, 'trace.html'),
-        'gfx', 'input', 'view', 'wm', 'am', 'sm', 'hal', 'app', 'res', 'dalvik', 'power', 'freq', 'freq', 'idle', 'load']
+    systracePath = os.path.join(SDK_PATH, 'platform-tools', 'systrace',
+                                'systrace.py')
+    systraceCommand = ['python', systracePath,
+                       '--serial=' + deviceId,
+                       packageParameter,
+                       '--time=20',
+                       '-o', os.path.join(destDir, 'trace.html'),
+                       'gfx', 'input', 'view', 'wm', 'am', 'sm', 'hal',
+                       'app', 'res', 'dalvik', 'power', 'freq', 'freq',
+                       'idle', 'load']
     print 'Executing systrace'
     print systraceCommand
-    systraceLogfile = open(os.path.join(destDir, 'logs', 'capture_systrace.log'), 'w')
-    subprocess.call(systraceCommand, stdout=systraceLogfile, stderr=subprocess.STDOUT, shell=False)
+    systraceLogfile = open(os.path.join(destDir, 'logs',
+                                        'capture_systrace.log'), 'w')
+    subprocess.call(systraceCommand,
+                    stdout=systraceLogfile,
+                    stderr=subprocess.STDOUT,
+                    shell=False)
     systraceLogfile.close()
     print 'Done trace logging'
 
-# Enable the DUMP permission on the debuggable test APK (test APK because we declared the
-# permission in the androidTest AndroidManifest.xml file.
+
+# Enable the DUMP permission on the debuggable test APK (test APK because
+# we declared the permission in the androidTest AndroidManifest.xml file.
 def enableDumpPermission():
     print 'Starting dump permission grant'
-    dumpPermissionCommand = [os.path.join(SDK_PATH, 'platform-tools', 'adb'), '-s',
-        deviceId, 'shell', 'pm', 'grant', packageName, 'android.permission.DUMP']
-    dumpPermissionLogfile = open(os.path.join(destDir, 'logs', 'enable_dump_permission.log'), 'w')
-    subprocess.call(dumpPermissionCommand, stdout=dumpPermissionLogfile, stderr=subprocess.STDOUT, shell=False)
+    dumpPermissionCommand = [os.path.join(SDK_PATH, 'platform-tools', 'adb'),
+                             '-s', deviceId,
+                             'shell',
+                             'pm', 'grant', packageName,
+                             'android.permission.DUMP']
+    dumpPermissionLogfile = open(os.path.join(destDir, 'logs',
+                                 'enable_dump_perm.log'), 'w')
+    subprocess.call(dumpPermissionCommand,
+                    stdout=dumpPermissionLogfile,
+                    stderr=subprocess.STDOUT,
+                    shell=False)
     dumpPermissionLogfile.close()
 
-# Enable the Storage permission on the debuggable test APK (test APK because we declared the
-# permission in the androidTest AndroidManifest.xml file.
+
+# Enable the Storage permission on the debuggable test APK (test APK because
+# we declared the permission in the androidTest AndroidManifest.xml file.
 def enableStoragePermission():
     print 'Starting storage permission grant'
-    storagePermissionCommand = [os.path.join(SDK_PATH, 'platform-tools', 'adb'), '-s',
-        deviceId, 'shell', 'pm', 'grant', packageName, 'android.permission.WRITE_EXTERNAL_STORAGE']
-    storagePermissionLogfile = open(os.path.join(destDir, 'logs', 'enable_storage_permission.log'), 'w')
-    subprocess.call(storagePermissionCommand, stdout=storagePermissionLogfile, stderr=subprocess.STDOUT, shell=False)
+    storagePermissionCommand = [os.path.join(SDK_PATH, 'platform-tools',
+                                             'adb'),
+                                '-s', deviceId,
+                                'shell',
+                                'pm', 'grant', packageName,
+                                'android.permission.WRITE_EXTERNAL_STORAGE']
+    logFilePath = os.path.join(destDir, 'logs', 'enable_storage_perm.log')
+    storagePermissionLogfile = open(logFilePath, 'w')
+    subprocess.call(storagePermissionCommand,
+                    stdout=storagePermissionLogfile,
+                    stderr=subprocess.STDOUT,
+                    shell=False)
     storagePermissionLogfile.close()
+
 
 def cleanHostTestDataFiles():
     print 'Cleaning data files'
-    folders = [os.path.join(destDir, 'testdata'), os.path.join(destDir, 'logs')]
+    folders = [os.path.join(destDir, 'testdata'),
+               os.path.join(destDir, 'logs')]
     for the_folder in folders:
         if os.path.isdir(the_folder):
             for the_file in os.listdir(the_folder):
@@ -115,37 +149,54 @@ def cleanHostTestDataFiles():
                 try:
                     if os.path.isfile(file_path):
                         os.unlink(file_path)
-                    elif os.path.isdir(file_path): shutil.rmtree(file_path)
+                    elif os.path.isdir(file_path):
+                        shutil.rmtree(file_path)
                 except Exception, e:
                     print e
     for the_folder in folders:
         if not os.path.isdir(the_folder):
             os.makedirs(the_folder)
 
+
 def pullDeviceTestDataFiles():
     print 'Starting adb pull for test files'
-    testDataLocation = '/storage/emulated/0/Android/data/' + packageName + '/files/testdata'
-    pullDeviceTestDataCommand = [os.path.join(SDK_PATH, 'platform-tools', 'adb'), '-s', deviceId,
-        'pull', testDataLocation, destDir]
-    pullDeviceTestDataLogfile = open(os.path.join(destDir, 'logs', 'pull_test_files.log'), 'w')
-    subprocess.call(pullDeviceTestDataCommand, stdout=pullDeviceTestDataLogfile, stderr=subprocess.STDOUT, shell=False)
+    testDataLocation = ('/storage/emulated/0/Android/data/' + packageName +
+                        '/files/testdata')
+    pullDeviceTestDataCommand = [os.path.join(SDK_PATH, 'platform-tools',
+                                              'adb'),
+                                 '-s', deviceId, 'pull', testDataLocation,
+                                 destDir]
+    pullDeviceTestDataLogfile = open(os.path.join(destDir, 'logs',
+                                                  'pull_test_files.log'),
+                                     'w')
+    subprocess.call(pullDeviceTestDataCommand,
+                    stdout=pullDeviceTestDataLogfile,
+                    stderr=subprocess.STDOUT,
+                    shell=False)
     pullDeviceTestDataLogfile.close()
 
+
 def openApp():
-    device.shell('am start -n ' + packageName + '/' + packageName + '.MainActivity')
+    device.shell('am start -n ' + packageName + '/' + packageName +
+                 '.MainActivity')
+
 
 def resetGfxinfo():
     print 'Clearing gfxinfo on device'
     device.shell('dumpsys gfxinfo ' + packageName + ' reset')
 
+
 def runTestsAndTakeSystrace():
     # Create and start threads to run tests and collect tracing information.
-    systraceThread = threading.Thread(name='SystraceThread', target=performSystraceLogging)
-    testThread = threading.Thread(name='TestThread', target=performTest, kwargs={ 'disableAnalytics': True })
+    systraceThread = threading.Thread(name='SystraceThread',
+                                      target=performSystraceLogging)
+    testThread = threading.Thread(name='TestThread',
+                                  target=performTest,
+                                  kwargs={'disableAnalytics': True})
     systraceThread.start()
     testThread.start()
 
-    # Join the parrallel thread processing so this completes when both are complete.
+    # Join the parallel thread processing to continue when both complete.
     systraceThread.join()
     traceTimeCompletion = int(time.time())
     print 'Systrace Thread Done'
@@ -153,7 +204,8 @@ def runTestsAndTakeSystrace():
     testThread.join()
     testTimeCompletion = int(time.time())
     print 'Test Thread Done'
-    print 'Time between test and trace thread completion: ' + str(testTimeCompletion - traceTimeCompletion)
+    print ('Time between test and trace thread completion: ' +
+           str(testTimeCompletion - traceTimeCompletion))
 
 
 def parseDumpsysFile(filename):
@@ -167,9 +219,11 @@ def parseDumpsysFile(filename):
             results['jankPercent'] = float(match.group(2))
     return results
 
+
 def analyseTestDataFiles():
     overallPassed = True
-    for dirName, subdirList, fileList in os.walk(os.path.join(destDir, 'testdata')):
+    for dirName, subdirList, fileList in os.walk(os.path.join(destDir,
+                                                              'testdata')):
         if dirName == os.path.join(destDir, 'testdata'):
             # in the root folder
             for fname in fileList:
@@ -192,26 +246,28 @@ def analyseTestDataFiles():
                     jankPerc = dumpResults['jankPercent']
                     if jankPerc:
                         if jankPerc > JANK_THRESHOLD:
-                            print 'FAIL: High level of janky frames detected ' \
-                                '(' + str(jankPerc) + '%). See trace.html for' \
-                                'details.'
+                            print ('FAIL: High level of janky frames ' +
+                                   'detected (' + str(jankPerc) + '%)' +
+                                   '. See trace.html for details.')
                             passed = False
                     else:
                         print 'ERROR: No dump results could be found.'
                         passed = False
                 elif fname == 'test.failure.log':
                     # process test failure logs
-                    print 'FAIL: Test failed. See ' + fullFilename + \
-                        ' for details.'
+                    print ('FAIL: Test failed. See ' + fullFilename +
+                           ' for details.')
                     passed = False
             if passed:
                 print 'PASS. No issues detected.'
             else:
                 overallPassed = False
-    testRunCompleteFile = os.path.join(destDir, 'testdata', 'testRunComplete.log')
+    testRunCompleteFile = os.path.join(destDir, 'testdata',
+                                       'testRunComplete.log')
     if not os.path.isfile(testRunCompleteFile):
         overallPassed = False
-        print '\nFAIL: Could not find file indicating the test run completed.'
+        print ('\nFAIL: Could not find file indicating the test run ' +
+               'completed.')
     if overallPassed:
         print '\nOVERALL: PASSED.'
         return 0
@@ -236,7 +292,8 @@ enableStoragePermission()
 
 openApp()
 
-# Clear the dumpsys data for the next run must be done immediately after openApp().
+# Clear the dumpsys data for the next run must be done immediately
+# after openApp().
 resetGfxinfo()
 
 runTestsAndTakeSystrace()
