@@ -6,8 +6,6 @@ import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.logging.Logger
 
-import java.util.logging.Logging
-
 /**
  * Gradle Plugin automating the creation of performance testing tasks for each device currently
  * connected to the current system.
@@ -26,6 +24,10 @@ public class PerfTestTaskGeneratorPlugin implements Plugin<Project> {
 
     public void apply(Project project) {
         logger = project.getLogger()
+        createLocalPerfTestTasks(project)
+    }
+
+    private void createLocalPerfTestTasks(Project project) {
         ArrayList<Task> createdTasks = new ArrayList<Task>()
         List<String> connectedDevices = getConnectedDeviceList(project)
 
@@ -48,7 +50,7 @@ public class PerfTestTaskGeneratorPlugin implements Plugin<Project> {
         // dependentTasks.addAll(postTestTasks)
 
         // Create a parent performance test task that can run all of the device-specific tasks.
-        Task runPerfTests = project.tasks.create(name: 'runPerfTests',
+        Task runLocalPerfTests = project.tasks.create(name: 'runLocalPerfTests',
                 type: DefaultTask,
                 group: 'verification',
                 dependsOn: dependentTasks,
@@ -57,12 +59,12 @@ public class PerfTestTaskGeneratorPlugin implements Plugin<Project> {
         // Create a perf test task for each connected device.
         // TODO(developer): Comment in the following build snippet to add a gradle task to run the monkeyrunner performance testing script.
         connectedDevices.each { androidDeviceId ->
-            RunPerfTestsTask newTask = (RunPerfTestsTask) project.tasks.create(
-                    name: ('runPerfTests_' + androidDeviceId),
-                    type: RunPerfTestsTask)
+            RunLocalPerfTestsTask newTask = (RunLocalPerfTestsTask) project.tasks.create(
+                    name: ('runLocalPerfTests_' + androidDeviceId),
+                    type: RunLocalPerfTestsTask)
             newTask.deviceId = androidDeviceId
             // Ensure each device-specific task is run by the parent perf test task.
-            runPerfTests.dependsOn(newTask)
+            runLocalPerfTests.dependsOn(newTask)
 
             // Ensure dependent tasks are depended upon by all device-specific tasks in case those
             // are run independently.
@@ -79,6 +81,7 @@ public class PerfTestTaskGeneratorPlugin implements Plugin<Project> {
             }
         }
     }
+
     private List<String> getConnectedDeviceList(Project project) {
         def rootDir = project.rootDir
         def localProperties = new File(rootDir, "local.properties")

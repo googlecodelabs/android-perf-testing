@@ -16,11 +16,9 @@
 
 package com.google.android.perftesting
 
-import com.sun.istack.internal.Nullable
 import org.apache.tools.ant.taskdefs.condition.Os
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
-import org.gradle.api.internal.TaskOutputsInternal
 import org.gradle.api.logging.Logger
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.incremental.IncrementalTaskInputs
@@ -29,10 +27,10 @@ import java.nio.file.Paths
 
 
 /**
- * Defined Gradle task to execute monkeyrunner and make it easier to run automated performance
- * tests within AndroidStudio.
+ * Defined Gradle task to execute local android device tests using monkeyrunner. This task makes it
+ * easier to run automated performance tests with out leaving AndroidStudio.
  */
-public class RunPerfTestsTask extends DefaultTask {
+public class RunLocalPerfTestsTask extends DefaultTask {
     Logger mLogger = getLogger()
 
     /**
@@ -40,7 +38,7 @@ public class RunPerfTestsTask extends DefaultTask {
      */
     String mDeviceId = ""
 
-    public RunPerfTestsTask() {
+    public RunLocalPerfTestsTask() {
         super()
         setGroup('verification')
         setDescription("Run performance tests on a specific device.")
