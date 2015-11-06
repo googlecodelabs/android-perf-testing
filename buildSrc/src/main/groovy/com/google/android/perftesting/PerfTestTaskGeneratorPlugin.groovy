@@ -25,6 +25,13 @@ public class PerfTestTaskGeneratorPlugin implements Plugin<Project> {
     public void apply(Project project) {
         logger = project.getLogger()
         createLocalPerfTestTasks(project)
+        createCloudRoboTestTask(project)
+    }
+
+    private void createCloudRoboTestTask(Project project) {
+        // Create a parent performance test task that can run all of the device-specific tasks.
+        project.tasks.create(name: 'runCloudRoboTests',
+                type: RunCloudRoboTestsTask)
     }
 
     private void createLocalPerfTestTasks(Project project) {
@@ -45,9 +52,6 @@ public class PerfTestTaskGeneratorPlugin implements Plugin<Project> {
         // Retrieve uninstall tasks that need to be run after the performance tests are complete.
         postTestTasks.add("uninstallAll")
         logger.info("Post test dependent tasks found: " + postTestTasks)
-
-        // Ensure the postTestTasks are run by making them a dependency for this task.
-        // dependentTasks.addAll(postTestTasks)
 
         // Create a parent performance test task that can run all of the device-specific tasks.
         Task runLocalPerfTests = project.tasks.create(name: 'runLocalPerfTests',
@@ -126,7 +130,7 @@ public class PerfTestTaskGeneratorPlugin implements Plugin<Project> {
                 }
             }
         }
-        logger.warn("Found connected devices for performance testing tasks: " + devices)
+        logger.warn("Found connected devices for local performance testing tasks: " + devices)
         return devices
     }
 }
