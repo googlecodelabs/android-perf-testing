@@ -334,7 +334,7 @@ def main():
     # worrying about whether your device display has gone to sleep.
     # Alternatively, you can use the "never sleep when charging" developer
     # ption.
-    device.press("KEYCODE_POWER", "DOWN_AND_UP")
+    # device.press("KEYCODE_POWER", "DOWN_AND_UP")
 
     enable_dump_permission(sdk_path, device_id, dest_dir, package_name)
     enable_storage_permission(sdk_path, device_id, dest_dir, package_name)
@@ -349,12 +349,9 @@ def main():
                            package_name)
 
     # Protip1: See comment above.
-    device.press("KEYCODE_POWER", "DOWN_AND_UP")
+    # device.press("KEYCODE_POWER", "DOWN_AND_UP")
 
     pull_device_data_files(sdk_path, device_id, dest_dir, package_name)
-
-    # Protip1: See comment above.
-    # device.press("KEYCODE_POWER", "DOWN_AND_UP")
 
     analyze_data_files(dest_dir)
 
