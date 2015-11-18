@@ -1,5 +1,3 @@
-import com.google.android.perftesting.PerfTestTaskGeneratorPlugin
-
 apply plugin: 'com.android.application'
 
 android {
@@ -40,12 +38,12 @@ dependencies {
     // Force the use of 23.1.0 of the annotations library because the app compile dependencies
     // require this version transitively, but an androidTestCompile dependency requires a different
     // version. See http://goo.gl/iH4WDq for more info.
-     androidTestCompile "com.android.support:support-annotations:${supportLibVersion}"
-     androidTestCompile 'com.android.support.test:runner:0.3'
-     androidTestCompile 'com.android.support.test:rules:0.3'
-     androidTestCompile 'com.android.support.test.espresso:espresso-core:2.2'
+    // androidTestCompile "com.android.support:support-annotations:${supportLibVersion}"
+    // androidTestCompile 'com.android.support.test:runner:0.3'
+    // androidTestCompile 'com.android.support.test:rules:0.3'
+    // androidTestCompile 'com.android.support.test.espresso:espresso-core:2.2'
 }
 
 // Create performance testing tasks for all connected Android devices using a Gradle plugin defined
 // in the buildSrc directory.
-apply plugin: PerfTestTaskGeneratorPlugin
+// apply plugin: PerfTestTaskGeneratorPlugin
