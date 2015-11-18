@@ -31,6 +31,7 @@ import org.junit.runner.RunWith;
  */
 @RunWith(AndroidJUnit4.class)
 @LargeTest
+// TODO(developer): Uncomment the below annotation to have this test added to the set of perf tests.
 // @PerfTest
 public class MainActivityTest {
 
@@ -66,7 +67,7 @@ public class MainActivityTest {
 //
 //    @Rule
 //    public EnableNetStatsDump mEnableNetStatsDump = new EnableNetStatsDump();
-//
+
 
       // TODO(developer): Uncomment below test method to add a simple test to the project.
 //    @Test
