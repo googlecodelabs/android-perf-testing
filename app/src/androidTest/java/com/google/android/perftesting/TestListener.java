@@ -58,7 +58,7 @@ public class TestListener extends RunListener {
         deleteExistingTestFilesInExternalData();
 
         mEnableBatteryStatsDump = new EnableBatteryStatsDump(
-                PerfTestingUtils.getTestRunFile("batterstats.dumpsys.log"));
+                PerfTestingUtils.getTestRunFile("batterystats.dumpsys.log"));
         mEnableBatteryStatsDump.before();
 
         mEnableDeviceGetPropsInfo = new EnableDeviceGetPropsInfo(
