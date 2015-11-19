@@ -153,17 +153,17 @@ def clean_test_files(dest_dir):
                 print 'ERROR Could not create directory structure for tests.'
 
 
-def pull_device_data_files(sdk_path, device_id, dest_dir, package_name):
+def pull_device_data_files(sdk_path, device_id, source_dir, dest_dir, package_name, log_suffix):
     """Extrace test files from a device after a test run."""
 
     print 'Starting adb pull for test files'
-    test_data_location = ('/storage/emulated/0/Android/data/' + package_name +
+    test_data_location = (source_dir + package_name +
                           '/files/testdata')
     pull_test_data_command = [os.path.join(sdk_path, 'platform-tools',
                                            'adb'),
                               '-s', device_id, 'pull', test_data_location,
                               dest_dir]
-    log_file_path = os.path.join(dest_dir, 'logs', 'pull_test_files.log')
+    log_file_path = os.path.join(dest_dir, 'logs', 'pull_test_files' + log_suffix + '.log')
     with open(log_file_path, 'w') as pull_test_data_log_file:
         try:
             subprocess.call(pull_test_data_command,
@@ -278,7 +278,7 @@ def analyze_data_files(dest_dir):
     if not os.path.isfile(test_complete_file):
         overall_passed = False
         print ('\nFAIL: Could not find file indicating the test run ' +
-               'completed.')
+               'completed. Check that the TestListener is writing files to external storage')
     if overall_passed:
         print '\nOVERALL: PASSED.'
         return 0
@@ -348,10 +348,16 @@ def main():
     run_tests_and_systrace(sdk_path, device, device_id, dest_dir,
                            package_name)
 
+    # Device files could be in either location on various devices.
+    pull_device_data_files(sdk_path, device_id,
+                           '/storage/emulated/0/Android/data/',
+                            dest_dir, package_name, '1')
+    pull_device_data_files(sdk_path, device_id,
+                           '/storage/emulated/legacy/Android/data/',
+                           dest_dir, package_name, '2')
+
     # Protip1: See comment above.
     # device.press("KEYCODE_POWER", "DOWN_AND_UP")
-
-    pull_device_data_files(sdk_path, device_id, dest_dir, package_name)
 
     analyze_data_files(dest_dir)
 

@@ -61,7 +61,6 @@ public class PerfTestTaskGeneratorPlugin implements Plugin<Project> {
                 description: 'Run performance tests on all connected devices.')
 
         // Create a perf test task for each connected device.
-        // TODO(developer): Comment in the following build snippet to add a gradle task to run the monkeyrunner performance testing script.
         connectedDevices.each { androidDeviceId ->
             RunLocalPerfTestsTask newTask = (RunLocalPerfTestsTask) project.tasks.create(
                     name: ('runLocalPerfTests_' + androidDeviceId),

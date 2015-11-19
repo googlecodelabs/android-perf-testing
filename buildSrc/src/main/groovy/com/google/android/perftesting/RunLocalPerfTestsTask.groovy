@@ -51,8 +51,6 @@ public class RunLocalPerfTestsTask extends DefaultTask {
 
     @TaskAction
     void execute(IncrementalTaskInputs inputs) {
-        // TODO(developer): Delete the next line and comment in the rest of this method to implement this task.
-
         mLogger.warn("Starting monkeyrunner")
         ProcessBuilder processBuilder = new ProcessBuilder()
 

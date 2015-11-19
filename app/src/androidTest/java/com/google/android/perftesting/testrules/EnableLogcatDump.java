@@ -16,16 +16,15 @@
 
 package com.google.android.perftesting.testrules;
 
+import android.os.Build;
 import android.os.Trace;
+import android.util.Log;
 
 import com.google.android.perftesting.common.PerfTestingUtils;
 
 import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * This rule executes clears logcat prior to a test then records the output at the end of a test.
@@ -37,7 +36,7 @@ import java.util.logging.Logger;
  */
 public class EnableLogcatDump extends ExternalResource {
 
-    private Logger logger = Logger.getLogger(EnableLogcatDump.class.getName());
+    private static final String LOG_TAG = "EnableLogcatDump";
 
     private String mTestName;
 
@@ -54,13 +53,15 @@ public class EnableLogcatDump extends ExternalResource {
      * Clear logcat buffer prior to test run.
      */
     public void before() throws Throwable {
-        ProcessBuilder processBuilder = new ProcessBuilder();
-        processBuilder.command("logcat", "-c");
-        processBuilder.redirectErrorStream();
-        Process process = processBuilder.start();
-        process.waitFor();
-        if (process.exitValue() != 0) {
-            throw new Exception("Error while clearing logcat, exitValue=" + process.exitValue());
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            ProcessBuilder processBuilder = new ProcessBuilder();
+            processBuilder.command("logcat", "-c");
+            processBuilder.redirectErrorStream();
+            Process process = processBuilder.start();
+            process.waitFor();
+            if (process.exitValue() != 0) {
+                Log.e(LOG_TAG, "Error while clearing logcat, exitValue=" + process.exitValue());
+            }
         }
     }
 
@@ -69,7 +70,7 @@ public class EnableLogcatDump extends ExternalResource {
      */
     public void after() {
         try {
-            if (android.os.Build.VERSION.SDK_INT >= 18) {
+            if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
                 Trace.beginSection("Taking logcat");
             }
             ProcessBuilder processBuilder = new ProcessBuilder();
@@ -81,13 +82,13 @@ public class EnableLogcatDump extends ExternalResource {
             Process process = processBuilder.start();
             process.waitFor();
             if (process.exitValue() != 0) {
-                logger.log(Level.SEVERE, "Error exit value while extracting logcat, exitValue=" +
+                Log.e(LOG_TAG, "Error exit value while extracting logcat, exitValue=" +
                         process.exitValue());
             }
         } catch (Exception ignored) {
-            logger.log(Level.SEVERE, "Error while extracting logcat", ignored);
+            Log.e(LOG_TAG, "Error while extracting logcat", ignored);
         } finally {
-            if (android.os.Build.VERSION.SDK_INT >= 18) {
+            if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
                 Trace.endSection();
             }
         }
