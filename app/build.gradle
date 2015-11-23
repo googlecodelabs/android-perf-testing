@@ -7,7 +7,7 @@ android {
     defaultConfig {
         applicationId "com.google.android.perftesting"
         minSdkVersion 11
-        targetSdkVersion 23
+        targetSdkVersion 22
         versionCode 1
         versionName "1.0"
 
@@ -27,7 +27,7 @@ android {
 }
 
 dependencies {
-    String supportLibVersion = "23.1.0"
+    String supportLibVersion = "23.1.1"
     compile fileTree(dir: 'libs', include: ['*.jar'])
     compile "com.android.support:appcompat-v7:${supportLibVersion}"
     compile "com.android.support:recyclerview-v7:${supportLibVersion}"
@@ -38,14 +38,12 @@ dependencies {
     // Force the use of 23.1.0 of the annotations library because the app compile dependencies
     // require this version transitively, but an androidTestCompile dependency requires a different
     // version. See http://goo.gl/iH4WDq for more info.
-    // androidTestCompile "com.android.support:support-annotations:${supportLibVersion}"
-    // androidTestCompile 'com.android.support.test:runner:0.3'
-    // androidTestCompile 'com.android.support.test:rules:0.3'
-    // androidTestCompile 'com.android.support.test.espresso:espresso-core:2.2'
+//     androidTestCompile "com.android.support:support-annotations:${supportLibVersion}"
+//     androidTestCompile 'com.android.support.test:runner:0.3'
+//     androidTestCompile 'com.android.support.test:rules:0.3'
+//     androidTestCompile 'com.android.support.test.espresso:espresso-core:2.2'
 }
 
-// TODO(developer): Comment in the following build snippet to add a gradle task to run the monkeyrunner performance testing script.
-//project.tasks.create(name: 'runPerfTests',
-//    type: RunPerfTestsTask,
-//    dependsOn: [":app:installDebugAndroidTest", ":app:installDebug", ":app:assembleDebug", ":app:assembleDebugAndroidTest"])
-
+// Create performance testing tasks for all connected Android devices using a Gradle plugin defined
+// in the buildSrc directory.
+// apply plugin: PerfTestTaskGeneratorPlugin

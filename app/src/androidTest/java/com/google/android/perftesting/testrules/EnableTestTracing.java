@@ -16,11 +16,11 @@
 
 package com.google.android.perftesting.testrules;
 
+import android.os.Trace;
+
 import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
-
-import android.os.Trace;
 
 /**
  * This rule enables {@link Trace Tracing} for each test. The section name

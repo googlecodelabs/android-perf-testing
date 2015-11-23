@@ -39,6 +39,8 @@ public class SimpleListActivity extends AppCompatActivity {
         List<Contact> contacts = Contact.createContactsList(1000);
 
         ListView listView = (ListView) findViewById(android.R.id.list);
+        // TODO(developer): Use the ContactsArrayAdapterFixed for a quick performance improvement.
+        // ContactsArrayAdapterFixed adapter = new ContactsArrayAdapterFixed(this, contacts);
         ContactsArrayAdapter adapter = new ContactsArrayAdapter(this, contacts);
         listView.setAdapter(adapter);
     }

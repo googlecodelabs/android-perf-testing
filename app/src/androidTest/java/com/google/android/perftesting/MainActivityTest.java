@@ -18,19 +18,17 @@ package com.google.android.perftesting;
 
 
 import android.support.test.rule.ActivityTestRule;
-import android.support.test.runner.AndroidJUnit4;
 import android.test.ActivityInstrumentationTestCase2;
-import android.test.suitebuilder.annotation.LargeTest;
 
 import org.junit.Before;
 import org.junit.Rule;
-import org.junit.runner.RunWith;
 
 /**
  * For a small sample on just the Espresso framework see https://goo.gl/GOUP47
  */
-@RunWith(AndroidJUnit4.class)
-@LargeTest
+// @RunWith(AndroidJUnit4.class)
+// @LargeTest
+// TODO(developer): Uncomment the below annotation to have this test added to the set of perf tests.
 // @PerfTest
 public class MainActivityTest {
 
@@ -67,8 +65,8 @@ public class MainActivityTest {
 //    @Rule
 //    public EnableNetStatsDump mEnableNetStatsDump = new EnableNetStatsDump();
 //
-
-      // TODO(developer): Uncomment below test method to add a simple test to the project.
+//
+//      // TODO(developer): Uncomment below test method to add a simple test to the project.
 //    @Test
 //    @PerfTest
 //    public void changeTextSameActivityTest() throws InterruptedException {

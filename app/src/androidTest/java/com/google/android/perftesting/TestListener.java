@@ -18,9 +18,11 @@ package com.google.android.perftesting;
 
 import android.content.Context;
 import android.support.annotation.NonNull;
+import android.util.Log;
 
 import com.google.android.perftesting.common.PerfTestingUtils;
 import com.google.android.perftesting.testrules.EnableBatteryStatsDump;
+import com.google.android.perftesting.testrules.EnableDeviceGetPropsInfo;
 
 import org.junit.runner.notification.Failure;
 import org.junit.runner.notification.RunListener;
@@ -34,46 +36,80 @@ import java.io.PrintWriter;
 import java.io.Reader;
 
 /**
- * Initiate post-test procedures to allow test-run data to be pulled from the device.
+ * Initiate pre-test and post-test procedures; including cleaning and moving files from the
+ * internal app data directory to the external one.  Also perform writing to test-start and test-end
+ * files which are used to indicate whether there was a fatal test exception
+ * (e.g. OutOfMemoryException).
  */
 public class TestListener extends RunListener {
-
+    private static final String LOG_TAG = "TestListener";
     public static final String TEST_DATA_SUBDIR_NAME = "testdata";
     public EnableBatteryStatsDump mEnableBatteryStatsDump;
+    public EnableDeviceGetPropsInfo mEnableDeviceGetPropsInfo;
 
     // TODO(developer): Uncomment the following two methods to enable log files to be pulled as well as battery and location request information to be requested.
 //    @Override
 //    public void testRunStarted(Description description) throws Exception {
-//        mEnableBatteryStatsDump = new EnableBatteryStatsDump(
-//                PerfTestingUtils.getTestRunFile("batterstats.dumpsys.log"));
-//        mEnableBatteryStatsDump.before();
+//        Log.w(LOG_TAG, "Test run started.");
+//        // Cleanup data from past test runs.
 //        deleteExistingTestFilesInAppData();
+//        deleteExistingTestFilesInExternalData();
+//
+//        mEnableBatteryStatsDump = new EnableBatteryStatsDump(
+//                PerfTestingUtils.getTestRunFile("batterystats.dumpsys.log"));
+//        mEnableBatteryStatsDump.before();
+//
+//        mEnableDeviceGetPropsInfo = new EnableDeviceGetPropsInfo(
+//                PerfTestingUtils.getTestRunFile("getprops.log"));
+//        mEnableDeviceGetPropsInfo.before();
+//
 //        // This isn't available until the next version of Google Play services.
 //        // resetLocationRequestTracking();
 //        super.testRunStarted(description);
 //    }
-
+//
 //    @Override
 //    public void testRunFinished(Result result) throws Exception {
+//        Log.w(LOG_TAG, "Test run finished.");
+//
 //        super.testRunFinished(result);
 //
-//        if (mEnableBatteryStatsDump != null) {
-//            mEnableBatteryStatsDump.after();
-//        }
 //        try {
-//            deleteExistingTestFilesInExternalData();
-//        } catch (Exception ignored) {
-//            // There may not be any data to delete.
+//            Log.w(LOG_TAG, "Test run finished");
+//
+//            if (mEnableBatteryStatsDump != null) {
+//                mEnableBatteryStatsDump.after();
+//            }
+//
+//            Log.w(LOG_TAG, "Battery stats collected.");
+//
+//            if (mEnableDeviceGetPropsInfo != null) {
+//                mEnableDeviceGetPropsInfo.after();
+//            }
+//            Log.w(LOG_TAG, "getprops collected.");
+//
+//            dumpLocationRequestInformation();
+//            Log.w(LOG_TAG, "Location request information collected.");
+//
+//            // Create a file indicating the test run is complete. This can be checked to ensure
+//            // the extraction of files for the test run was successful.
+//            File testRunFinishedFile = PerfTestingUtils.getTestRunFile("testRunComplete.log");
+//            testRunFinishedFile.createNewFile();
+//            Log.w(LOG_TAG, "testRunComplete file written.");
+//
+//            copyTestFilesToExternalData();
+//
+//            Log.w(LOG_TAG, "Done copying files to external data directory");
+//        } catch (Exception e) {
+//            Log.e(LOG_TAG, "Issue taking all log files after test run", e);
 //        }
-//        dumpLocationRequestInformation();
-//        copyTestFilesToExternalData();
 //    }
 
-//    @Override
-//    public void testFailure(Failure failure) throws Exception {
-//        super.testFailure(failure);
-//        logTestFailure(failure);
-//    }
+    @Override
+    public void testFailure(Failure failure) throws Exception {
+        super.testFailure(failure);
+        logTestFailure(failure);
+    }
 
     /**
      * Move files from the app's internal file location to a location that can be read on retail
@@ -93,6 +129,8 @@ public class TestListener extends RunListener {
 
         String srcAbsolutePath = PerfTestingUtils.getTestRunDir().getAbsolutePath();
         String destAbsolutePath = externalTestFilesStorageDir.getAbsolutePath();
+
+        Log.w(LOG_TAG, "Moving test data from " + srcAbsolutePath + " to " + destAbsolutePath);
 
         processBuilder.command("cp", "-r", srcAbsolutePath, destAbsolutePath);
         processBuilder.redirectErrorStream();
@@ -114,9 +152,11 @@ public class TestListener extends RunListener {
                 if (errorStream != null) try { errorStream.close(); } catch (Exception ignored) {}
                 if (reader != null) try { reader.close(); } catch (Exception ignored) {}
             }
+            String errorString = errOutput.toString();
+            Log.e(LOG_TAG, errorString);
             throw new IOException("Not able to move test data to external storage directory:"
                     + " src=" + srcAbsolutePath + ", dest=" + destAbsolutePath + ", out=" +
-                    errOutput);
+                    errorString);
         }
     }
 
@@ -132,10 +172,6 @@ public class TestListener extends RunListener {
         processBuilder.redirectErrorStream();
         Process process = processBuilder.start();
         process.waitFor();
-        if (process.exitValue()!= 0) {
-            throw new IOException("Not able to delete external test data in " +
-                    destAbsolutePath);
-        }
     }
 
     private void deleteExistingTestFilesInAppData() throws IOException, InterruptedException {
@@ -148,10 +184,6 @@ public class TestListener extends RunListener {
         processBuilder.redirectErrorStream();
         Process process = processBuilder.start();
         process.waitFor();
-        if (process.exitValue()!= 0) {
-            throw new IOException("Not able to delete in app test data in " +
-                    destAbsolutePath);
-        }
     }
 
     private void resetLocationRequestTracking() throws IOException, InterruptedException {
@@ -162,43 +194,44 @@ public class TestListener extends RunListener {
         processBuilder.redirectErrorStream();
         Process process = processBuilder.start();
         process.waitFor();
-        if (process.exitValue()!= 0) {
-            throw new IOException("Not able to reset location provider logging info.");
-        }
     }
 
-    private void dumpLocationRequestInformation() throws IOException, InterruptedException {
-        ProcessBuilder processBuilder = new ProcessBuilder();
-
-        File externalTestFilesStorageDir = getAppDataLogDir();
-        File locationRequestLogFile = new File(externalTestFilesStorageDir, "locationRequests"
-                + ".dumpsys.log");
-        String destAbsolutePath = locationRequestLogFile.getAbsolutePath();
-
-        processBuilder.command("dumpsys", "activity", "service",
-                "com.google.android.location.internal.GoogleLocationManagerService");
-        processBuilder.redirectErrorStream();
-        Process process = processBuilder.start();
-        process.waitFor();
-
-        FileWriter fileWriter = null;
-        InputStreamReader inputStreamReader = null;
+    private void dumpLocationRequestInformation() {
         try {
-            fileWriter = new FileWriter(destAbsolutePath);
-            inputStreamReader = new InputStreamReader(process.getInputStream());
-            char[] charBuffer = new char[1024];
-            int readSize;
-            while ((readSize = inputStreamReader.read(charBuffer, 0, charBuffer.length)) > -1) {
-                fileWriter.write(charBuffer, 0, readSize);
+            ProcessBuilder processBuilder = new ProcessBuilder();
+
+            File externalTestFilesStorageDir = getAppDataLogDir();
+            File locationRequestLogFile = new File(externalTestFilesStorageDir, "locationRequests"
+                    + ".dumpsys.log");
+            String destAbsolutePath = locationRequestLogFile.getAbsolutePath();
+
+            processBuilder.command("dumpsys", "activity", "service",
+                    "com.google.android.location.internal.GoogleLocationManagerService");
+            processBuilder.redirectErrorStream();
+            Process process = processBuilder.start();
+            process.waitFor();
+
+            FileWriter fileWriter = null;
+            InputStreamReader inputStreamReader = null;
+            try {
+                fileWriter = new FileWriter(destAbsolutePath);
+                inputStreamReader = new InputStreamReader(process.getInputStream());
+                char[] charBuffer = new char[1024];
+                int readSize;
+                while ((readSize = inputStreamReader.read(charBuffer, 0, charBuffer.length)) > -1) {
+                    fileWriter.write(charBuffer, 0, readSize);
+                }
+
+            } finally {
+                try { inputStreamReader.close(); } catch (Exception ignored) {}
+                try { fileWriter.close(); } catch (Exception ignored) {}
             }
 
-        } finally {
-            try { inputStreamReader.close(); } catch (Exception ignored) {}
-            try { fileWriter.close(); } catch (Exception ignored) {}
-        }
-
-        if (process.exitValue()!= 0) {
-            throw new IOException("Not retrieve location provider logging info.");
+            if (process.exitValue()!= 0) {
+                throw new IOException("Exit value non-zero.");
+            }
+        } catch (Exception e) {
+            Log.e(LOG_TAG, "Unable to retrieve location provide logging information", e);
         }
     }
 

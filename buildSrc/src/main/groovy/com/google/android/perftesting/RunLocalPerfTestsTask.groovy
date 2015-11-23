@@ -27,23 +27,30 @@ import java.nio.file.Paths
 
 
 /**
- * Defined Gradle task to execute monkeyrunner and make it easier to run automated performance
- * tests within AndroidStudio.
+ * Defined Gradle task to execute local android device tests using monkeyrunner. This task makes it
+ * easier to run automated performance tests with out leaving AndroidStudio.
  */
-public class RunPerfTestsTask extends DefaultTask {
+public class RunLocalPerfTestsTask extends DefaultTask {
     Logger mLogger = getLogger()
 
-    RunPerfTestsTask() {
-        super();
-        // Forces this task to always run. Comment below to only run when the dependent APKs
-        outputs.upToDateWhen { false }
+    /**
+     * Default to not supplying a value unless a deviceId was set.
+     */
+    String mDeviceId = ""
+
+    public RunLocalPerfTestsTask() {
+        super()
+        setGroup('verification')
+        setDescription("Run performance tests on a specific device.")
+        // Forces this task to always run.
+        if (deviceId != null) {
+            mDeviceId = deviceId
+        }
+        getOutputs().upToDateWhen({ return false })
     }
 
     @TaskAction
     void execute(IncrementalTaskInputs inputs) {
-        // TODO(developer): Delete the next line and comment in the rest of this method to implement this task.
-        // mLogger.warn("Not doing anything yet.")
-
 //        mLogger.warn("Starting monkeyrunner")
 //        ProcessBuilder processBuilder = new ProcessBuilder()
 //
@@ -62,7 +69,7 @@ public class RunPerfTestsTask extends DefaultTask {
 //        def monkeyPath = Paths.get(sdkDir, "tools", "monkeyrunner" + monkeyExt).toAbsolutePath().toString()
 //        def rootDir = getProject().getRootDir().getAbsolutePath()
 //        def monkeyScriptPath = Paths.get(rootDir, "run_perf_tests.py").toAbsolutePath().toString()
-//        processBuilder.command(monkeyPath, monkeyScriptPath, rootDir)
+//        processBuilder.command(monkeyPath, monkeyScriptPath, rootDir, mDeviceId)
 //        processBuilder.environment().put("ANDROID_HOME", sdkDir)
 //        processBuilder.redirectErrorStream()
 //        Process process = processBuilder.start()
@@ -76,5 +83,14 @@ public class RunPerfTestsTask extends DefaultTask {
 //            throw new GradleException("Monkeyrunner script didn't complete")
 //        }
 //        mLogger.warn("Monkeyrunner complete")
+    }
+
+    public void setDeviceId(String deviceId) {
+        setDescription("Run performance tests on device with serial ${deviceId}")
+        mDeviceId = deviceId
+    }
+
+    public String getDeviceId() {
+        return mDeviceId
     }
 }
