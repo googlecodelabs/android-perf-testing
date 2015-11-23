@@ -21,7 +21,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.widget.ListView;
 
 import com.google.android.perftesting.contacts.Contact;
-import com.google.android.perftesting.contacts.ContactsArrayAdapterFixed;
+import com.google.android.perftesting.contacts.ContactsArrayAdapter;
 
 import java.util.List;
 
@@ -40,8 +40,8 @@ public class SimpleListActivity extends AppCompatActivity {
 
         ListView listView = (ListView) findViewById(android.R.id.list);
         // TODO(developer): Use the ContactsArrayAdapterFixed for a quick performance improvement.
-        ContactsArrayAdapterFixed adapter = new ContactsArrayAdapterFixed(this, contacts);
-        // ContactsArrayAdapter adapter = new ContactsArrayAdapter(this, contacts);
+        // ContactsArrayAdapterFixed adapter = new ContactsArrayAdapterFixed(this, contacts);
+        ContactsArrayAdapter adapter = new ContactsArrayAdapter(this, contacts);
         listView.setAdapter(adapter);
     }
 }
