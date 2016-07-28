@@ -24,6 +24,8 @@ import com.google.android.perftesting.common.PerfTestingUtils;
 import com.google.android.perftesting.testrules.EnableBatteryStatsDump;
 import com.google.android.perftesting.testrules.EnableDeviceGetPropsInfo;
 
+import org.junit.runner.Description;
+import org.junit.runner.Result;
 import org.junit.runner.notification.Failure;
 import org.junit.runner.notification.RunListener;
 
@@ -48,62 +50,62 @@ public class TestListener extends RunListener {
     public EnableDeviceGetPropsInfo mEnableDeviceGetPropsInfo;
 
     // TODO(developer): Uncomment the following two methods to enable log files to be pulled as well as battery and location request information to be requested.
-//    @Override
-//    public void testRunStarted(Description description) throws Exception {
-//        Log.w(LOG_TAG, "Test run started.");
-//        // Cleanup data from past test runs.
-//        deleteExistingTestFilesInAppData();
-//        deleteExistingTestFilesInExternalData();
-//
-//        mEnableBatteryStatsDump = new EnableBatteryStatsDump(
-//                PerfTestingUtils.getTestRunFile("batterystats.dumpsys.log"));
-//        mEnableBatteryStatsDump.before();
-//
-//        mEnableDeviceGetPropsInfo = new EnableDeviceGetPropsInfo(
-//                PerfTestingUtils.getTestRunFile("getprops.log"));
-//        mEnableDeviceGetPropsInfo.before();
-//
-//        // This isn't available until the next version of Google Play services.
-//        // resetLocationRequestTracking();
-//        super.testRunStarted(description);
-//    }
-//
-//    @Override
-//    public void testRunFinished(Result result) throws Exception {
-//        Log.w(LOG_TAG, "Test run finished.");
-//
-//        super.testRunFinished(result);
-//
-//        try {
-//            Log.w(LOG_TAG, "Test run finished");
-//
-//            if (mEnableBatteryStatsDump != null) {
-//                mEnableBatteryStatsDump.after();
-//            }
-//
-//            Log.w(LOG_TAG, "Battery stats collected.");
-//
-//            if (mEnableDeviceGetPropsInfo != null) {
-//                mEnableDeviceGetPropsInfo.after();
-//            }
-//            Log.w(LOG_TAG, "getprops collected.");
-//
-//            dumpLocationRequestInformation();
-//            Log.w(LOG_TAG, "Location request information collected.");
-//
-//            // Create a file indicating the test run is complete. This can be checked to ensure
-//            // the extraction of files for the test run was successful.
-//            File testRunFinishedFile = PerfTestingUtils.getTestRunFile("testRunComplete.log");
-//            testRunFinishedFile.createNewFile();
-//            Log.w(LOG_TAG, "testRunComplete file written.");
-//
-//            copyTestFilesToExternalData();
-//
-//            Log.w(LOG_TAG, "Done copying files to external data directory");
-//        } catch (Exception e) {
-//            Log.e(LOG_TAG, "Issue taking all log files after test run", e);
-//        }
-//    }
+    @Override
+    public void testRunStarted(Description description) throws Exception {
+        Log.w(LOG_TAG, "Test run started.");
+        // Cleanup data from past test runs.
+        deleteExistingTestFilesInAppData();
+        deleteExistingTestFilesInExternalData();
+
+        mEnableBatteryStatsDump = new EnableBatteryStatsDump(
+                PerfTestingUtils.getTestRunFile("batterystats.dumpsys.log"));
+        mEnableBatteryStatsDump.before();
+
+        mEnableDeviceGetPropsInfo = new EnableDeviceGetPropsInfo(
+                PerfTestingUtils.getTestRunFile("getprops.log"));
+        mEnableDeviceGetPropsInfo.before();
+
+        // This isn't available until the next version of Google Play services.
+        // resetLocationRequestTracking();
+        super.testRunStarted(description);
+    }
+
+    @Override
+    public void testRunFinished(Result result) throws Exception {
+        Log.w(LOG_TAG, "Test run finished.");
+
+        super.testRunFinished(result);
+
+        try {
+            Log.w(LOG_TAG, "Test run finished");
+
+            if (mEnableBatteryStatsDump != null) {
+                mEnableBatteryStatsDump.after();
+            }
+
+            Log.w(LOG_TAG, "Battery stats collected.");
+
+            if (mEnableDeviceGetPropsInfo != null) {
+                mEnableDeviceGetPropsInfo.after();
+            }
+            Log.w(LOG_TAG, "getprops collected.");
+
+            dumpLocationRequestInformation();
+            Log.w(LOG_TAG, "Location request information collected.");
+
+            // Create a file indicating the test run is complete. This can be checked to ensure
+            // the extraction of files for the test run was successful.
+            File testRunFinishedFile = PerfTestingUtils.getTestRunFile("testRunComplete.log");
+            testRunFinishedFile.createNewFile();
+            Log.w(LOG_TAG, "testRunComplete file written.");
+
+            copyTestFilesToExternalData();
+
+            Log.w(LOG_TAG, "Done copying files to external data directory");
+        } catch (Exception e) {
+            Log.e(LOG_TAG, "Issue taking all log files after test run", e);
+        }
+    }
 
     @Override
     public void testFailure(Failure failure) throws Exception {

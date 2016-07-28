@@ -59,7 +59,8 @@ public class EnablePostTestDumpsys extends ExternalResource {
             ProcessBuilder builder = new ProcessBuilder();
             builder.command("dumpsys", "gfxinfo", "--reset",
                     // NOTE: Using the android app BuildConfig specifically.
-                    com.google.android.perftesting.BuildConfig.APPLICATION_ID);
+                    //com.google.android.perftesting.BuildConfig.APPLICATION_ID);
+                    "com.skysoft.kkbox.android");
             Process process = builder.start();
             process.waitFor();
         } catch (Exception exception) {
@@ -78,7 +79,7 @@ public class EnablePostTestDumpsys extends ExternalResource {
                 // TODO: If less than API level 23 we should remove framestats.
                 processBuilder.command("dumpsys", "gfxinfo",
                         // NOTE: Using the android app BuildConfig specifically.
-                        com.google.android.perftesting.BuildConfig.APPLICATION_ID,
+                        "com.skysoft.kkbox.android",
                         "framestats");
                 processBuilder.redirectErrorStream();
                 Process process = processBuilder.start();
