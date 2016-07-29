@@ -27,7 +27,7 @@ import re
 import sys
 
 # Imports the monkeyrunner modules used by this program.
-from com.android.monkeyrunner import MonkeyRunner, MonkeyDevice # pylint: disable=import-error,unused-import
+#from com.android.monkeyrunner import MonkeyRunner, MonkeyDevice # pylint: disable=import-error,unused-import
 
 # Percentage of janky frames to detect to warn.
 JANK_THRESHOLD = 60
@@ -38,17 +38,21 @@ def perform_test(device, package_name):
 
     print 'Starting test'
 
-    params = dict({
-        'listener': 'com.google.android.perftesting.TestListener',
-        'annotation': 'com.google.android.perftesting.common.PerfTest',
-        'disableAnalytics': 'true'
-    })
+    # params = dict({
+    #     'listener': 'com.google.android.perftesting.TestListener',
+    #     'annotation': 'com.google.android.perftesting.common.PerfTest',
+    #     'disableAnalytics': 'true'
+    # })
+    #
+    # test_runner = (package_name + '.test' +
+    #                '/android.support.test.runner.AndroidJUnitRunner')
 
-    test_runner = (package_name + '.test' +
-                   '/android.support.test.runner.AndroidJUnitRunner')
-
+    cmd = "adb shell am instrument -w -e listener com.google.android.perftesting.TestListener"
+    cmd = "%s -e annotation com.google.android.perftesting.common.PerfTest -e disableAnalytics true" %cmd
+    cmd = "%s com.google.android.perftesting.test/android.support.test.runner.AndroidJUnitRunner" %cmd
+    subprocess.call(cmd, shell=True)
     # Run the test and print the timing result.
-    print device.instrument(test_runner, params)['stream']
+    # print device.instrument(test_runner, params)['stream']
     print 'Done running tests'
 
 
@@ -176,15 +180,15 @@ def pull_device_data_files(sdk_path, device_id, source_dir, dest_dir, package_na
 
 def open_app(device, package_name):
     """Open the specified app on the device."""
-
-    device.shell('am start -n ' + package_name + '/' + package_name +
-                 '.MainActivity')
+    subprocess.call('adb shell am start -n ' + package_name + '/' + package_name + '.MainActivity', shell=True)
+    # device.shell('am start -n ' + package_name + '/' + package_name +
+    #              '.MainActivity')
 
 
 def reset_graphics_dumpsys(device, package_name):
     """Reset all existing data in graphics buffer."""
     print 'Clearing gfxinfo on device'
-    device.shell('dumpsys gfxinfo ' + package_name + ' reset')
+    subprocess.call('adb shell dumpsys gfxinfo ' + package_name + ' reset', shell=True)
 
 
 def run_tests_and_systrace(sdk_path, device, device_id, dest_dir,
@@ -320,14 +324,18 @@ def main():
     sdk_path = android_home
 
     # sets a variable with the package's internal name
+
     package_name = 'com.google.android.perftesting'
 
     clean_test_files(dest_dir)
 
     # Connects to the current device, returning a MonkeyDevice object
     print 'Waiting for a device to be connected.'
-    device = MonkeyRunner.waitForConnection(5, device_id)
+    # device = MonkeyRunner.waitForConnection(5, device_id)
+    device = None
     print 'Device connected.'
+
+
 
     # Protip1: Remove the screen lock on your test devices then uncomment
     # this like and the same one farther down. This will prevent you from
@@ -347,6 +355,7 @@ def main():
 
     run_tests_and_systrace(sdk_path, device, device_id, dest_dir,
                            package_name)
+
 
     # Device files could be in either location on various devices.
     pull_device_data_files(sdk_path, device_id,

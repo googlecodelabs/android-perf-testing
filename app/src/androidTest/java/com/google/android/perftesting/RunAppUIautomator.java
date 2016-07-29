@@ -66,9 +66,10 @@ public class RunAppUIautomator {
 
     @Test
     @PerfTest
-    public void startMainActivityAndSwipe() throws InterruptedException, UiObjectNotFoundException {
+    public void startMainActivityAndSwipe() throws InterruptedException, UiObjectNotFoundException{
         // Initialize UiDevice instance
         mDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
+
 
         // open the app
         Context context = InstrumentationRegistry.getContext();
@@ -83,11 +84,12 @@ public class RunAppUIautomator {
         int displayHeight = mDevice.getDisplayHeight();
 
         for (int i = 0; i <= 5; i++) {
-            mDevice.swipe(displayWidth / 2, (int) (displayHeight * .9),
-                    displayWidth / 2, (int) (displayHeight * .25), 20);
+            mDevice.swipe(displayWidth / 2, (int) (displayHeight* .9),
+                    displayWidth / 2, (int)(displayHeight* .25), 20);
 
             Thread.sleep(2000);
         }
 
     }
+
 }
