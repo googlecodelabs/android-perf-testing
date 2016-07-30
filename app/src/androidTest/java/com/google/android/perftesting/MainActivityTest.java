@@ -76,6 +76,8 @@ public class MainActivityTest {
 //        onView(withId(R.id.edit_text_button)).perform(click());
 //
 //        // Check that the text was changed.
+//        // Note that this test may fail if test device or emulator uses 3rd party keyboard app.
+//        // If that happens, retry this test after switching keyboard setting to default keyboard.
 //        onView(withId(R.id.display_text_view)).check(matches(withText(STRING_TO_BE_TYPED)));
 //    }
 }
