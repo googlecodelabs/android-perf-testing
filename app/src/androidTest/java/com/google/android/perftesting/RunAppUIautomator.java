@@ -23,6 +23,7 @@ import android.support.test.filters.SdkSuppress;
 import android.support.test.runner.AndroidJUnit4;
 import android.support.test.uiautomator.UiDevice;
 import android.support.test.uiautomator.UiObjectNotFoundException;
+import android.util.Log;
 
 import com.google.android.perftesting.common.PerfTest;
 import com.google.android.perftesting.testrules.EnableLogcatDump;
@@ -30,9 +31,11 @@ import com.google.android.perftesting.testrules.EnableNetStatsDump;
 import com.google.android.perftesting.testrules.EnablePostTestDumpsys;
 import com.google.android.perftesting.testrules.EnableTestTracing;
 
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.runner.notification.RunListener;
 
 /**
  * For a small sample on just the Espresso framework see https://goo.gl/GOUP47
@@ -41,9 +44,10 @@ import org.junit.runner.RunWith;
 @SdkSuppress(minSdkVersion = 18)
 // TODO(developer): Uncomment the below annotation to have this test added to the set of perf tests.
  @PerfTest
-public class RunAppUIautomator {
+public class RunAppUIautomator extends RunListener {
     private static final String BASIC_SAMPLE_PACKAGE
             = "com.example.android.testing.uiautomator.BasicSample";
+    private static final String LOG_TAG = "RunAppUIautomator";
     private static final int LAUNCH_TIMEOUT = 5000;
     private static final String STRING_TO_BE_TYPED = "UiAutomator";
     private UiDevice mDevice;
@@ -64,13 +68,14 @@ public class RunAppUIautomator {
     @Rule
     public EnableNetStatsDump mEnableNetStatsDump = new EnableNetStatsDump();
 
-    @Test
-    @PerfTest
-    public void startMainActivityAndSwipe() throws InterruptedException, UiObjectNotFoundException{
-        // Initialize UiDevice instance
-        mDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
+//    @Rule
+//    public mEnableBatteryStatsDump = new EnableBatteryStatsDump(
+//            PerfTestingUtils.getTestRunFile("batterystats.dumpsys.log"));
 
 
+    @BeforeClass
+    public static void openApp(){
+        Log.w(LOG_TAG, "open the app~~~~~~~~~~");
         // open the app
         Context context = InstrumentationRegistry.getContext();
         final Intent intent = context.getPackageManager()
@@ -78,6 +83,16 @@ public class RunAppUIautomator {
         // Clear out any previous instances
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
         context.startActivity(intent);
+    }
+
+
+    @Test
+    @PerfTest
+    public void startSwipe() throws InterruptedException, UiObjectNotFoundException{
+//        long startTime = System.nanoTime();
+        Log.w(LOG_TAG, "swipe the app~~~~~~~~~~~~");
+        // Initialize UiDevice instance
+        mDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
 
         //scroll view
         int displayWidth = mDevice.getDisplayWidth();
@@ -89,7 +104,8 @@ public class RunAppUIautomator {
 
             Thread.sleep(2000);
         }
-
+//        long endTime = System.nanoTime();
+//        Log.w(LOG_TAG,"timeeeee:" + String.valueOf(endTime - startTime));
     }
 
 }
