@@ -17,6 +17,9 @@ collecting batterystats, location request information, and a systrace.
 """
 
 from __future__ import with_statement
+from xml.etree import ElementTree, cElementTree
+from xml.dom import minidom
+
 
 import os
 import shutil
@@ -26,10 +29,12 @@ import time
 import re
 import sys
 
+
 # Imports the monkeyrunner modules used by this program.
-#from com.android.monkeyrunner import MonkeyRunner, MonkeyDevice # pylint: disable=import-error,unused-import
+# from com.android.monkeyrunner import MonkeyRunner, MonkeyDevice # pylint: disable=import-error,unused-import
 
 # Percentage of janky frames to detect to warn.
+
 JANK_THRESHOLD = 60
 DUMPSYS_FILENAME = 'dumpsys.log'
 
@@ -38,21 +43,24 @@ def perform_test(device, package_name):
 
     print 'Starting test'
 
-    # params = dict({
-    #     'listener': 'com.google.android.perftesting.TestListener',
-    #     'annotation': 'com.google.android.perftesting.common.PerfTest',
-    #     'disableAnalytics': 'true'
-    # })
-    #
-    # test_runner = (package_name + '.test' +
-    #                '/android.support.test.runner.AndroidJUnitRunner')
+    params = dict({
+        'listener': 'com.google.android.perftesting.TestListener',
+        'annotation': 'com.google.android.perftesting.common.PerfTest',
+        'disableAnalytics': 'true'
+    })
 
-    cmd = "adb shell am instrument -w -e listener com.google.android.perftesting.TestListener"
-    cmd = "%s -e annotation com.google.android.perftesting.common.PerfTest -e disableAnalytics true" %cmd
-    cmd = "%s com.google.android.perftesting.test/android.support.test.runner.AndroidJUnitRunner" %cmd
+    test_runner = (package_name + '.test' +
+                   '/android.support.test.runner.AndroidJUnitRunner')
+
+    cmd = "adb shell am instrument"
+    cmd = "%s -e listener com.google.android.perftesting.TestListener" % cmd
+    cmd = "%s -e annotation com.google.android.perftesting.common.PerfTest" % cmd
+    cmd = "%s -e disableAnalytics true" % cmd
+    cmd = "%s -w com.google.android.perftesting.test/android.support.test.runner.AndroidJUnitRunner" % cmd
     subprocess.call(cmd, shell=True)
     # Run the test and print the timing result.
-    # print device.instrument(test_runner, params)['stream']
+    #print device.instrument(test_runner, params)['stream']
+
     print 'Done running tests'
 
 
@@ -155,6 +163,7 @@ def clean_test_files(dest_dir):
                 os.makedirs(the_folder)
             except OSError:
                 print 'ERROR Could not create directory structure for tests.'
+                # os.unlink('testing.xml')
 
 
 def pull_device_data_files(sdk_path, device_id, source_dir, dest_dir, package_name, log_suffix):
@@ -180,14 +189,18 @@ def pull_device_data_files(sdk_path, device_id, source_dir, dest_dir, package_na
 
 def open_app(device, package_name):
     """Open the specified app on the device."""
+
+    '''
+    device.shell('am start -n ' + package_name + '/' + package_name +
+                 '.MainActivity')
+    '''
     subprocess.call('adb shell am start -n ' + package_name + '/' + package_name + '.MainActivity', shell=True)
-    # device.shell('am start -n ' + package_name + '/' + package_name +
-    #              '.MainActivity')
 
 
 def reset_graphics_dumpsys(device, package_name):
     """Reset all existing data in graphics buffer."""
     print 'Clearing gfxinfo on device'
+    #device.shell('dumpsys gfxinfo ' + package_name + ' reset')
     subprocess.call('adb shell dumpsys gfxinfo ' + package_name + ' reset', shell=True)
 
 
@@ -210,6 +223,7 @@ def run_tests_and_systrace(sdk_path, device, device_id, dest_dir,
 
     # Join the parallel thread processing to continue when both complete.
     systrace_thread.join()
+    test_thread.join()
     trace_time_completion = int(time.time())
     print 'Systrace Thread Done'
 
@@ -260,6 +274,10 @@ def analyze_data_files(dest_dir):
                     dump_results = parse_dump_file(full_filename)
                     jank_perc = dump_results['jank_percent']
                     if jank_perc:
+                        print jank_perc
+
+                        generate_xml(str(jank_perc))
+
                         if jank_perc > JANK_THRESHOLD:
                             print ('FAIL: High level of janky frames ' +
                                    'detected (' + str(jank_perc) + '%)' +
@@ -290,6 +308,18 @@ def analyze_data_files(dest_dir):
         print '\nOVERALL: FAILED. See above for more information.'
         return 1
 
+def generate_xml(jank_perc):
+    root = ElementTree.Element('root')
+    child1 = ElementTree.SubElement(root, 'doc')
+    child1_1 = ElementTree.SubElement(child1, 'Jankyframes')
+    child1_1.text = jank_perc + "%"
+    print ElementTree.tostring(root)
+    t = minidom.parseString(ElementTree.tostring(root)).toprettyxml()
+    tree1 = ElementTree.ElementTree(ElementTree.fromstring(t))
+    tree1.write("testing.xml")
+
+
+
 
 def main():
     """Run this script with
@@ -314,7 +344,7 @@ def main():
     platform_tools = os.path.join(android_home, 'platform-tools')
     current_path = os.environ.get('PATH', '')
     os.environ['PATH'] = (platform_tools if current_path == '' else current_path +
-                          os.pathsep + platform_tools)
+                                                                    os.pathsep + platform_tools)
 
     if not os.path.isdir(android_home):
         print 'Your ANDROID_HOME path do not appear to be set in your environment'
@@ -324,18 +354,15 @@ def main():
     sdk_path = android_home
 
     # sets a variable with the package's internal name
-
     package_name = 'com.google.android.perftesting'
 
     clean_test_files(dest_dir)
 
     # Connects to the current device, returning a MonkeyDevice object
     print 'Waiting for a device to be connected.'
-    # device = MonkeyRunner.waitForConnection(5, device_id)
+    #device = MonkeyRunner.waitForConnection(5, device_id)
     device = None
     print 'Device connected.'
-
-
 
     # Protip1: Remove the screen lock on your test devices then uncomment
     # this like and the same one farther down. This will prevent you from
@@ -347,7 +374,7 @@ def main():
     enable_dump_permission(sdk_path, device_id, dest_dir, package_name)
     enable_storage_permission(sdk_path, device_id, dest_dir, package_name)
 
-    open_app(device, package_name)
+    # open_app(device, package_name)
 
     # Clear the dumpsys data for the next run must be done immediately
     # after open_app().
@@ -356,11 +383,10 @@ def main():
     run_tests_and_systrace(sdk_path, device, device_id, dest_dir,
                            package_name)
 
-
     # Device files could be in either location on various devices.
     pull_device_data_files(sdk_path, device_id,
                            '/storage/emulated/0/Android/data/',
-                            dest_dir, package_name, '1')
+                           dest_dir, package_name, '1')
     pull_device_data_files(sdk_path, device_id,
                            '/storage/emulated/legacy/Android/data/',
                            dest_dir, package_name, '2')
