@@ -46,7 +46,7 @@ import org.junit.runner.notification.RunListener;
  @PerfTest
 public class RunAppUIautomator extends RunListener {
     private static final String BASIC_SAMPLE_PACKAGE
-            = "com.example.android.testing.uiautomator.BasicSample";
+            = "com.skysoft.kkbox.android";
     private static final String LOG_TAG = "RunAppUIautomator";
     private static final int LAUNCH_TIMEOUT = 5000;
     private static final String STRING_TO_BE_TYPED = "UiAutomator";
@@ -75,12 +75,13 @@ public class RunAppUIautomator extends RunListener {
 
     @BeforeClass
     public static void openApp(){
+
         Log.w(LOG_TAG, "open the app~~~~~~~~~~");
-        // open the app
+         //open the app
         Context context = InstrumentationRegistry.getContext();
         final Intent intent = context.getPackageManager()
                 .getLaunchIntentForPackage("com.skysoft.kkbox.android");
-        // Clear out any previous instances
+         //Clear out any previous instances
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
         context.startActivity(intent);
     }
@@ -89,8 +90,7 @@ public class RunAppUIautomator extends RunListener {
     @Test
     @PerfTest
     public void startSwipe() throws InterruptedException, UiObjectNotFoundException{
-//        long startTime = System.nanoTime();
-        Log.w(LOG_TAG, "swipe the app~~~~~~~~~~~~");
+        Log.w(LOG_TAG, "swipe start~~~~~");
         // Initialize UiDevice instance
         mDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
 
@@ -104,8 +104,26 @@ public class RunAppUIautomator extends RunListener {
 
             Thread.sleep(2000);
         }
-//        long endTime = System.nanoTime();
-//        Log.w(LOG_TAG,"timeeeee:" + String.valueOf(endTime - startTime));
+    }
+
+    @Test
+    @PerfTest
+    public void startSwip2() throws InterruptedException, UiObjectNotFoundException {
+        Log.w(LOG_TAG, "swipe2 start~~~~~");
+        // Initialize UiDevice instance
+        mDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
+
+        //scroll view
+        int displayWidth = mDevice.getDisplayWidth();
+        int displayHeight = mDevice.getDisplayHeight();
+
+        for (int i = 0; i <= 5; i++) {
+            mDevice.swipe(displayWidth / 2, (int) (displayHeight* .9),
+                    displayWidth / 2, (int)(displayHeight* .25), 20);
+
+            Thread.sleep(2000);
+        }
+
     }
 
 }
