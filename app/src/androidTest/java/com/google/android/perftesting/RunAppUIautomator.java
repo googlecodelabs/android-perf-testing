@@ -53,8 +53,8 @@ public class RunAppUIautomator extends RunListener {
     private static final String LOG_TAG = "RunAppUIautomator";
     private static final int LAUNCH_TIMEOUT = 5000;
     private static final String STRING_TO_BE_TYPED = "UiAutomator";
-    private static UiDevice Device;
-    public UiDevice mDevice;
+    private static UiDevice Device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
+    private UiDevice mDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
 
 //    @Rule
 //    public Timeout globalTimeout= new Timeout(
@@ -78,8 +78,6 @@ public class RunAppUIautomator extends RunListener {
 
     @BeforeClass
     public static void openApp(){
-        Device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
-
          //open the app
         Context context = InstrumentationRegistry.getContext();
         final Intent intent = context.getPackageManager()
@@ -88,6 +86,7 @@ public class RunAppUIautomator extends RunListener {
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
         context.startActivity(intent);
 
+        //Wait for the view to appear
         Device.wait(Until.hasObject(By.res("com.skysoft.kkbox.android:id/view_runway")), LAUNCH_TIMEOUT);
     }
 
@@ -95,11 +94,8 @@ public class RunAppUIautomator extends RunListener {
     @Test
     @PerfTest
     public void buttonclick() throws InterruptedException, UiObjectNotFoundException {
-        
-        long startTime = System.nanoTime();
-        mDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
 
-        mDevice.wait(Until.hasObject(By.res("com.skysoft.kkbox.android:id/view_runway")), LAUNCH_TIMEOUT);
+        long startTime = System.nanoTime();
 
         mDevice.findObject(By.text("類型")).click();
 
