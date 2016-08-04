@@ -21,8 +21,10 @@ import android.content.Intent;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.filters.SdkSuppress;
 import android.support.test.runner.AndroidJUnit4;
+import android.support.test.uiautomator.By;
 import android.support.test.uiautomator.UiDevice;
 import android.support.test.uiautomator.UiObjectNotFoundException;
+import android.support.test.uiautomator.Until;
 import android.util.Log;
 
 import com.google.android.perftesting.common.PerfTest;
@@ -30,6 +32,7 @@ import com.google.android.perftesting.testrules.EnableLogcatDump;
 import com.google.android.perftesting.testrules.EnableNetStatsDump;
 import com.google.android.perftesting.testrules.EnablePostTestDumpsys;
 import com.google.android.perftesting.testrules.EnableTestTracing;
+import com.google.android.perftesting.testrules.GetResponseTime;
 
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -50,7 +53,8 @@ public class RunAppUIautomator extends RunListener {
     private static final String LOG_TAG = "RunAppUIautomator";
     private static final int LAUNCH_TIMEOUT = 5000;
     private static final String STRING_TO_BE_TYPED = "UiAutomator";
-    private UiDevice mDevice;
+    private static UiDevice Device;
+    public UiDevice mDevice;
 
 //    @Rule
 //    public Timeout globalTimeout= new Timeout(
@@ -68,62 +72,63 @@ public class RunAppUIautomator extends RunListener {
     @Rule
     public EnableNetStatsDump mEnableNetStatsDump = new EnableNetStatsDump();
 
-//    @Rule
-//    public mEnableBatteryStatsDump = new EnableBatteryStatsDump(
-//            PerfTestingUtils.getTestRunFile("batterystats.dumpsys.log"));
+    @Rule
+    public GetResponseTime mGetResponseTime = new GetResponseTime();
 
 
     @BeforeClass
     public static void openApp(){
+        Device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
 
-        Log.w(LOG_TAG, "open the app~~~~~~~~~~");
          //open the app
         Context context = InstrumentationRegistry.getContext();
         final Intent intent = context.getPackageManager()
-                .getLaunchIntentForPackage("com.skysoft.kkbox.android");
+                .getLaunchIntentForPackage(BASIC_SAMPLE_PACKAGE);
          //Clear out any previous instances
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
         context.startActivity(intent);
+
+        Device.wait(Until.hasObject(By.res("com.skysoft.kkbox.android:id/view_runway")), LAUNCH_TIMEOUT);
     }
 
 
     @Test
     @PerfTest
-    public void startSwipe() throws InterruptedException, UiObjectNotFoundException{
-        Log.w(LOG_TAG, "swipe start~~~~~");
-        // Initialize UiDevice instance
+    public void buttonclick() throws InterruptedException, UiObjectNotFoundException {
+        
+        long startTime = System.nanoTime();
         mDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
 
-        //scroll view
-        int displayWidth = mDevice.getDisplayWidth();
-        int displayHeight = mDevice.getDisplayHeight();
+        mDevice.wait(Until.hasObject(By.res("com.skysoft.kkbox.android:id/view_runway")), LAUNCH_TIMEOUT);
 
-        for (int i = 0; i <= 5; i++) {
-            mDevice.swipe(displayWidth / 2, (int) (displayHeight* .9),
-                    displayWidth / 2, (int)(displayHeight* .25), 20);
+        mDevice.findObject(By.text("類型")).click();
 
-            Thread.sleep(2000);
-        }
-    }
+        mDevice.wait(Until.hasObject(By.text("華語")), LAUNCH_TIMEOUT);
 
-    @Test
-    @PerfTest
-    public void startSwip2() throws InterruptedException, UiObjectNotFoundException {
-        Log.w(LOG_TAG, "swipe2 start~~~~~");
-        // Initialize UiDevice instance
-        mDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
+        long endTime = System.nanoTime();
 
-        //scroll view
-        int displayWidth = mDevice.getDisplayWidth();
-        int displayHeight = mDevice.getDisplayHeight();
-
-        for (int i = 0; i <= 5; i++) {
-            mDevice.swipe(displayWidth / 2, (int) (displayHeight* .9),
-                    displayWidth / 2, (int)(displayHeight* .25), 20);
-
-            Thread.sleep(2000);
-        }
+        Log.w(LOG_TAG, "Time about turn to scroll bar:" + String.valueOf((endTime - startTime)/1000000000f) + "sec");
 
     }
+
+//    @Test
+//    @PerfTest
+//    public void startSwip2() throws InterruptedException, UiObjectNotFoundException {
+//        Log.w(LOG_TAG, "swipe2 start~~~~~");
+//        // Initialize UiDevice instance
+//        mDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
+//
+//        //scroll view
+//        int displayWidth = mDevice.getDisplayWidth();
+//        int displayHeight = mDevice.getDisplayHeight();
+//
+//        for (int i = 0; i <= 5; i++) {
+//            mDevice.swipe(displayWidth / 2, (int) (displayHeight* .9),
+//                    displayWidth / 2, (int)(displayHeight* .25), 20);
+//
+//            Thread.sleep(2000);
+//        }
+//
+//    }
 
 }
