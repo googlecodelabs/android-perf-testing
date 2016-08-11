@@ -53,10 +53,8 @@ import org.junit.rules.RuleChain;
 @RunWith(AndroidJUnit4.class)
 @SdkSuppress(minSdkVersion = 18)
 // TODO(developer): Uncomment the below annotation to have this test added to the set of perf tests.
- @PerfTest
+@PerfTest
 public class RunAppUIautomator extends RunListener {
-    public static Config config = new Config();
-    private static final String BASIC_SAMPLE_PACKAGE = config.packagename;
     private static final String LOG_TAG = "RunAppUIautomator";
     private static final int LAUNCH_TIMEOUT = 5000;
     private static final String STRING_TO_BE_TYPED = "UiAutomator";
@@ -93,13 +91,13 @@ public class RunAppUIautomator extends RunListener {
          //open the app
         Context context = InstrumentationRegistry.getContext();
         final Intent intent = context.getPackageManager()
-                .getLaunchIntentForPackage(BASIC_SAMPLE_PACKAGE);
+                .getLaunchIntentForPackage(Config.TARGET_PACKAGE_NAME);
          //Clear out any previous instances
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
         context.startActivity(intent);
 
         //Wait for the view to appear
-        Device.wait(Until.hasObject(By.res(BASIC_SAMPLE_PACKAGE + ":id/view_runway")), LAUNCH_TIMEOUT);
+        Device.wait(Until.hasObject(By.res(Config.TARGET_PACKAGE_NAME + ":id/view_runway")), LAUNCH_TIMEOUT);
     }
 
     //---------------------Testcase----------------------//
