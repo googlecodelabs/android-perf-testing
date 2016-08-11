@@ -87,15 +87,7 @@ public class PerfTestTaskGeneratorPlugin implements Plugin<Project> {
 
     private List<String> getConnectedDeviceList(Project project) {
         def rootDir = project.rootDir
-        def localProperties = new File(rootDir, "local.properties")
-        def sdkDir = ""
-        if (localProperties.exists()) {
-            Properties properties = new Properties()
-            localProperties.withInputStream { instr ->
-                properties.load(instr)
-            }
-            sdkDir = properties.getProperty('sdk.dir')
-        }
+        def sdkDir = System.getenv("ANDROID_HOME")
         String adbCommand = sdkDir + File.separator + "platform-tools" + File.separator + "adb"
         logger.info("Using ADB command: ${adbCommand}")
         // Compose a list of connected Android devices.
