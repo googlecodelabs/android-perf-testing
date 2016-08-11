@@ -13,9 +13,6 @@ import org.junit.runners.model.Statement;
 
 import java.io.BufferedReader;
 import java.io.FileWriter;
-import java.io.InputStreamReader;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import static com.google.android.perftesting.common.PerfTestingUtils.getTestFile;
 
@@ -85,9 +82,3 @@ public class GetExecutionTime extends ExternalResource{
         }
     }
 }
-
-
-
-
-
-
