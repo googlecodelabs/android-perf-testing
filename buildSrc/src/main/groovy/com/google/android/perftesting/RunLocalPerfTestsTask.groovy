@@ -54,23 +54,9 @@ public class RunLocalPerfTestsTask extends DefaultTask {
         mLogger.warn("Starting monkeyrunner")
         ProcessBuilder processBuilder = new ProcessBuilder()
 
-        // TODO: Read these properties using a better method.
-        Properties properties = new Properties()
-        project.rootProject.file('local.properties').withDataInputStream { inputStream ->
-            properties.load(inputStream)
-        }
-        def sdkDir = properties.getProperty('sdk.dir')
-
-        def monkeyExt = ''
-        if (Os.isFamily(Os.FAMILY_WINDOWS)) {
-            monkeyExt = '.bat'
-        }
-
-//        def monkeyPath = Paths.get(sdkDir, "tools", "monkeyrunner" + monkeyExt).toAbsolutePath().toString()
         def rootDir = getProject().getRootDir().getAbsolutePath()
         def monkeyScriptPath = Paths.get(rootDir, "run_perf_tests.py").toAbsolutePath().toString()
         processBuilder.command('python', monkeyScriptPath, rootDir, mDeviceId)
-        processBuilder.environment().put("ANDROID_HOME", sdkDir)
         processBuilder.redirectErrorStream()
         Process process = processBuilder.start()
         process.waitFor()
