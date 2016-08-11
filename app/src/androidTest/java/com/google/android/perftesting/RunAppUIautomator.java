@@ -33,7 +33,9 @@ import com.google.android.perftesting.testrules.EnableNetStatsDump;
 import com.google.android.perftesting.testrules.EnablePostTestDumpsys;
 import com.google.android.perftesting.testrules.EnableTestTracing;
 import com.google.android.perftesting.testrules.GetExecutionTime;
+import com.google.android.perftesting.Config;
 
+import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -53,8 +55,8 @@ import org.junit.rules.RuleChain;
 // TODO(developer): Uncomment the below annotation to have this test added to the set of perf tests.
  @PerfTest
 public class RunAppUIautomator extends RunListener {
-    private static final String BASIC_SAMPLE_PACKAGE
-            = "com.skysoft.kkbox.android";
+    public static Config config = new Config();
+    private static final String BASIC_SAMPLE_PACKAGE = config.packagename;
     private static final String LOG_TAG = "RunAppUIautomator";
     private static final int LAUNCH_TIMEOUT = 5000;
     private static final String STRING_TO_BE_TYPED = "UiAutomator";
@@ -65,7 +67,7 @@ public class RunAppUIautomator extends RunListener {
 //    public Timeout globalTimeout= new Timeout(
 //            SCROLL_TIME_IN_MILLIS + MAX_ADAPTER_VIEW_PROCESSING_TIME_IN_MILLIS, TimeUnit.MILLISECONDS);
 
-    //--------------------rule chain--------------------//
+    //--------------------rule chain: order testrules---------------------//
 
     public EnableTestTracing mEnableTestTracing = new EnableTestTracing();
 
@@ -85,10 +87,9 @@ public class RunAppUIautomator extends RunListener {
             .around(mEnableNetStatsDump)
             .around(mGetExecutionTime);
 
-
-
+    //----------Beforeclass: Run Before Testcase------------//
     @BeforeClass
-    public static void openApp(){
+    public static void setup(){
          //open the app
         Context context = InstrumentationRegistry.getContext();
         final Intent intent = context.getPackageManager()
@@ -98,44 +99,54 @@ public class RunAppUIautomator extends RunListener {
         context.startActivity(intent);
 
         //Wait for the view to appear
-        Device.wait(Until.hasObject(By.res("com.skysoft.kkbox.android:id/view_runway")), LAUNCH_TIMEOUT);
+        Device.wait(Until.hasObject(By.res(BASIC_SAMPLE_PACKAGE + ":id/view_runway")), LAUNCH_TIMEOUT);
     }
 
+    //---------------------Testcase----------------------//
+    @Test
+    @PerfTest
+    public void startSwip1() throws InterruptedException, UiObjectNotFoundException {
+
+        // Initialize UiDevice instance
+        mDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
+
+        //scroll view
+        int displayWidth = mDevice.getDisplayWidth();
+        int displayHeight = mDevice.getDisplayHeight();
+
+        for (int i = 0; i <= 2; i++) {
+            mDevice.swipe(displayWidth / 2, (int) (displayHeight* .9),
+                    displayWidth / 2, (int)(displayHeight* .25), 20);
+
+            Thread.sleep(2000);
+        }
+
+    }
 
     @Test
     @PerfTest
-    public void buttonclick() throws InterruptedException, UiObjectNotFoundException {
+    public void startSwip2() throws InterruptedException, UiObjectNotFoundException {
+        // Initialize UiDevice instance
+        mDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
 
-        long startTime = System.nanoTime();
+        //scroll view
+        int displayWidth = mDevice.getDisplayWidth();
+        int displayHeight = mDevice.getDisplayHeight();
 
-        mDevice.findObject(By.text("類型")).click();
+        for (int i = 0; i <= 3; i++) {
+            mDevice.swipe(displayWidth / 2, (int) (displayHeight* .9),
+                    displayWidth / 2, (int)(displayHeight* .25), 20);
 
-        mDevice.wait(Until.hasObject(By.text("華語")), LAUNCH_TIMEOUT);
-
-        long endTime = System.nanoTime();
-
-        Log.w(LOG_TAG, "Time about turn to scroll bar:" + String.valueOf((endTime - startTime)/1000000000f) + "sec");
+            Thread.sleep(2000);
+        }
 
     }
 
-//    @Test
-//    @PerfTest
-//    public void startSwip2() throws InterruptedException, UiObjectNotFoundException {
-//        Log.w(LOG_TAG, "swipe2 start~~~~~");
-//        // Initialize UiDevice instance
-//        mDevice = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
-//
-//        //scroll view
-//        int displayWidth = mDevice.getDisplayWidth();
-//        int displayHeight = mDevice.getDisplayHeight();
-//
-//        for (int i = 0; i <= 5; i++) {
-//            mDevice.swipe(displayWidth / 2, (int) (displayHeight* .9),
-//                    displayWidth / 2, (int)(displayHeight* .25), 20);
-//
-//            Thread.sleep(2000);
-//        }
-//
-//    }
+    //----------------After: Run After Testcase----------------//
+    @After
+    public void teardown() throws InterruptedException, UiObjectNotFoundException {
+        // Initialize UiDevice instance
+
+    }
 
 }
