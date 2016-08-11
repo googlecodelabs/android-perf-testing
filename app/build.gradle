@@ -13,6 +13,8 @@ android {
         versionName "1.0"
 
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunnerArguments listener : 'com.google.android.perftesting.TestListener',annotation: 'com.google.android.perftesting.common.PerfTest',
+                disableAnalytics: 'true'
         testHandleProfiling true
         testFunctionalTest true
     }
