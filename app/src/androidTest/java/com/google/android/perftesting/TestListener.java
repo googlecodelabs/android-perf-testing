@@ -121,10 +121,7 @@ public class TestListener extends RunListener {
     private void copyTestFilesToExternalData() throws IOException, InterruptedException {
         ProcessBuilder processBuilder = new ProcessBuilder();
 
-//        Environment appUnderTestContext = PerfTestingUtils.getAppContext();
         File externalAppStorageDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS);
-        Log.i(LOG_TAG, externalAppStorageDir.getPath());
-
         File externalTestFilesStorageDir = new File(externalAppStorageDir, TEST_DATA_SUBDIR_NAME);
         if (!externalTestFilesStorageDir.exists()) {
             if (!externalTestFilesStorageDir.mkdirs()) {
@@ -163,16 +160,13 @@ public class TestListener extends RunListener {
                     + " src=" + srcAbsolutePath + ", dest=" + destAbsolutePath + ", out=" +
                     errorString);
         }
-        Log.i(LOG_TAG, "You have 120 seconds to inspect the collected test data.");
-        Thread.sleep(120000);
 
     }
 
     private void deleteExistingTestFilesInExternalData() throws IOException, InterruptedException {
         ProcessBuilder processBuilder = new ProcessBuilder();
 
-        Context appUnderTestContext = PerfTestingUtils.getAppContext();
-        File externalAppStorageDir = appUnderTestContext.getExternalFilesDir(null);
+        File externalAppStorageDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS);
         File externalTestFilesStorageDir = new File(externalAppStorageDir, TEST_DATA_SUBDIR_NAME);
         String destAbsolutePath = externalTestFilesStorageDir.getAbsolutePath();
 

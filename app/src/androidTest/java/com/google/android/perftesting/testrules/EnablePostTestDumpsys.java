@@ -49,6 +49,8 @@ public class EnablePostTestDumpsys extends ExternalResource {
     private String mTestName;
     private String mTestClass;
 
+//    private static final String LOG_TAG = "EnablePostTestDumpsys";
+
     @Override
     public Statement apply(Statement base, Description description) {
         mTestName = description.getMethodName();
