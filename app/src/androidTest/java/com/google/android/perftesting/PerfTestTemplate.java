@@ -42,7 +42,7 @@ import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
 @SdkSuppress(minSdkVersion = 18)
-@PerfTest
+// @PerfTest
 public class PerfTestTemplate {
     private static final int LAUNCH_TIMEOUT = 5000;
 
