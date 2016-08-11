@@ -32,13 +32,18 @@ import com.google.android.perftesting.testrules.EnableLogcatDump;
 import com.google.android.perftesting.testrules.EnableNetStatsDump;
 import com.google.android.perftesting.testrules.EnablePostTestDumpsys;
 import com.google.android.perftesting.testrules.EnableTestTracing;
-import com.google.android.perftesting.testrules.GetResponseTime;
+import com.google.android.perftesting.testrules.GetExecutionTime;
 
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runner.notification.RunListener;
+
+//-----------------for rule chain--------------------//
+
+import org.junit.rules.TestRule;
+import org.junit.rules.RuleChain;
 
 /**
  * For a small sample on just the Espresso framework see https://goo.gl/GOUP47
@@ -60,20 +65,26 @@ public class RunAppUIautomator extends RunListener {
 //    public Timeout globalTimeout= new Timeout(
 //            SCROLL_TIME_IN_MILLIS + MAX_ADAPTER_VIEW_PROCESSING_TIME_IN_MILLIS, TimeUnit.MILLISECONDS);
 
-    @Rule
+    //--------------------rule chain--------------------//
+
     public EnableTestTracing mEnableTestTracing = new EnableTestTracing();
 
-    @Rule
     public EnablePostTestDumpsys mEnablePostTestDumpsys = new EnablePostTestDumpsys();
 
-    @Rule
     public EnableLogcatDump mEnableLogcatDump = new EnableLogcatDump();
 
-    @Rule
     public EnableNetStatsDump mEnableNetStatsDump = new EnableNetStatsDump();
 
+    public GetExecutionTime mGetExecutionTime = new GetExecutionTime();
+
     @Rule
-    public GetResponseTime mGetResponseTime = new GetResponseTime();
+    public TestRule chain = RuleChain
+            .outerRule(mEnableLogcatDump)
+            .around(mEnableTestTracing)
+            .around(mEnablePostTestDumpsys)
+            .around(mEnableNetStatsDump)
+            .around(mGetExecutionTime);
+
 
 
     @BeforeClass
