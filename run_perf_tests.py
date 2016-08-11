@@ -47,31 +47,9 @@ def perform_test(device, package_name):
 
     print 'Starting test'
 
-    params = dict({
-        'listener': 'com.google.android.perftesting.TestListener',
-        'annotation': 'com.google.android.perftesting.common.PerfTest',
-        'disableAnalytics': 'true'
-    })
-
-    test_runner = (package_name + '.test' +
-                   '/android.support.test.runner.AndroidJUnitRunner')
-
-
-
-    cmd1 = "./gradlew connectedDebugAndroidTest"
-    subprocess.call(cmd1, shell=True)
-
-    # cmd = "adb shell am instrument"
-    # cmd = "%s -e listener com.google.android.perftesting.TestListener" % cmd
-    # cmd = "%s -e annotation com.google.android.perftesting.common.PerfTest" % cmd
-    # cmd = "%s -e disableAnalytics true" % cmd
-    # cmd = "%s -w com.google.android.perftesting.test/android.support.test.runner.AndroidJUnitRunner" % cmd
-
-    # subprocess.call(cmd, shell=True)
     # Run the test and print the timing result.
-    #print device.instrument(test_runner, params)['stream']
-
-    #
+    cmd = "./gradlew connectedDebugAndroidTest"
+    subprocess.call(cmd, shell=True)
 
     print 'Done running tests'
 
@@ -344,7 +322,7 @@ def xml(dest_dir, jank_perc, execution_time):
             if name == testcase_name:
                 element.set('jank-percentage', jank_perc)
                 element.set('execution-time', execution_time)
-    tree.write("testing.xml")
+    tree.write("results.xml")
 
 def main():
     """Run this script with
@@ -420,7 +398,7 @@ def main():
 
     analyze_data_files(dest_dir)
 
-    # parsing janky frames and execution time to the xml file
+    # adding janky frames and execution time to the xml file
     dest_dir = sys.argv[1:][0] or '.'
     xml(dest_dir, list_for_jank_perc, list_for_execution_time)
 
