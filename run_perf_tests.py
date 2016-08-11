@@ -17,7 +17,7 @@ collecting batterystats, location request information, and a systrace.
 """
 
 from __future__ import with_statement
-from xml.etree import ElementTree, cElementTree
+from xml.etree import ElementTree
 from xml.dom import minidom
 
 
@@ -28,6 +28,7 @@ import threading
 import time
 import re
 import sys
+import datetime
 
 
 # Imports the monkeyrunner modules used by this program.
@@ -37,6 +38,9 @@ import sys
 
 JANK_THRESHOLD = 60
 DUMPSYS_FILENAME = 'dumpsys.log'
+testcase_names = []
+list_for_jank_perc = []
+list_for_execution_time = []
 
 def perform_test(device, package_name):
     """Execution code for a test run thread."""
@@ -52,14 +56,22 @@ def perform_test(device, package_name):
     test_runner = (package_name + '.test' +
                    '/android.support.test.runner.AndroidJUnitRunner')
 
-    cmd = "adb shell am instrument"
-    cmd = "%s -e listener com.google.android.perftesting.TestListener" % cmd
-    cmd = "%s -e annotation com.google.android.perftesting.common.PerfTest" % cmd
-    cmd = "%s -e disableAnalytics true" % cmd
-    cmd = "%s -w com.google.android.perftesting.test/android.support.test.runner.AndroidJUnitRunner" % cmd
-    subprocess.call(cmd, shell=True)
+
+
+    cmd1 = "./gradlew connectedDebugAndroidTest"
+    subprocess.call(cmd1, shell=True)
+
+    # cmd = "adb shell am instrument"
+    # cmd = "%s -e listener com.google.android.perftesting.TestListener" % cmd
+    # cmd = "%s -e annotation com.google.android.perftesting.common.PerfTest" % cmd
+    # cmd = "%s -e disableAnalytics true" % cmd
+    # cmd = "%s -w com.google.android.perftesting.test/android.support.test.runner.AndroidJUnitRunner" % cmd
+
+    # subprocess.call(cmd, shell=True)
     # Run the test and print the timing result.
     #print device.instrument(test_runner, params)['stream']
+
+    #
 
     print 'Done running tests'
 
@@ -163,15 +175,14 @@ def clean_test_files(dest_dir):
                 os.makedirs(the_folder)
             except OSError:
                 print 'ERROR Could not create directory structure for tests.'
-                # os.unlink('testing.xml')
 
 
 def pull_device_data_files(sdk_path, device_id, source_dir, dest_dir, package_name, log_suffix):
     """Extrace test files from a device after a test run."""
 
     print 'Starting adb pull for test files'
-    test_data_location = (source_dir + package_name +
-                          '/files/testdata')
+    test_data_location = (source_dir +
+                          'testdata')
     pull_test_data_command = [os.path.join(sdk_path, 'platform-tools',
                                            'adb'),
                               '-s', device_id, 'pull', test_data_location,
@@ -185,16 +196,6 @@ def pull_device_data_files(sdk_path, device_id, source_dir, dest_dir, package_na
                             shell=False)
         except OSError:
             print 'ERROR extracting test files.'
-
-
-def open_app(device, package_name):
-    """Open the specified app on the device."""
-
-    '''
-    device.shell('am start -n ' + package_name + '/' + package_name +
-                 '.MainActivity')
-    '''
-    subprocess.call('adb shell am start -n ' + package_name + '/' + package_name + '.MainActivity', shell=True)
 
 
 def reset_graphics_dumpsys(device, package_name):
@@ -246,6 +247,16 @@ def parse_dump_file(filename):
         return results
 
 
+def parse_executiontime_file(filename):
+    with open(filename, 'r') as time_file:
+        results = dict()
+        for line in time_file:
+            match = re.search(r'Execution Time : ([\d+\.]+) sec', line)
+            if match is not None:
+                results['execution_time'] = (match.group(1))
+        return  results
+
+
 def analyze_data_files(dest_dir):
     """Analyze data files for issues that indicate a test failure."""
     overall_passed = True
@@ -270,13 +281,13 @@ def analyze_data_files(dest_dir):
             for fname in file_list:
                 full_filename = os.path.join(dir_name, fname)
                 if fname == 'gfxinfo.dumpsys.log':
+                    # get the names of testcases
+                    get_testcase_name(dest_dir, full_filename)
                     # process gfxinfo for janky frames
                     dump_results = parse_dump_file(full_filename)
                     jank_perc = dump_results['jank_percent']
+                    list_for_jank_perc.append(str(jank_perc))
                     if jank_perc:
-                        print jank_perc
-
-                        generate_xml(str(jank_perc))
 
                         if jank_perc > JANK_THRESHOLD:
                             print ('FAIL: High level of janky frames ' +
@@ -286,15 +297,21 @@ def analyze_data_files(dest_dir):
                     else:
                         print 'ERROR: No dump results could be found.'
                         passed = False
+                if fname == 'executiontime.log':
+                    executiontime_results = parse_executiontime_file(full_filename)
+                    execution_time = executiontime_results['execution_time']
+                    list_for_execution_time.append(execution_time)
                 elif fname == 'test.failure.log':
                     # process test failure logs
                     print ('FAIL: Test failed. See ' + full_filename +
                            ' for details.')
                     passed = False
+
             if passed:
                 print 'PASS. No issues detected.'
             else:
                 overall_passed = False
+
     test_complete_file = os.path.join(dest_dir, 'testdata',
                                       'testRunComplete.log')
     if not os.path.isfile(test_complete_file):
@@ -308,18 +325,26 @@ def analyze_data_files(dest_dir):
         print '\nOVERALL: FAILED. See above for more information.'
         return 1
 
-def generate_xml(jank_perc):
-    root = ElementTree.Element('root')
-    child1 = ElementTree.SubElement(root, 'doc')
-    child1_1 = ElementTree.SubElement(child1, 'Jankyframes')
-    child1_1.text = jank_perc + "%"
-    print ElementTree.tostring(root)
-    t = minidom.parseString(ElementTree.tostring(root)).toprettyxml()
-    tree1 = ElementTree.ElementTree(ElementTree.fromstring(t))
-    tree1.write("testing.xml")
+
+def get_testcase_name(dest_dir, full_filename):
+    get_testcase_name = os.path.dirname(full_filename)
+    testcase_name = re.match(dest_dir + r"/testdata/testdata/c.g.a.perftesting.RunAppUIautomator\_(.*)"
+                             , str(get_testcase_name)).group(1)
+    testcase_names.append(testcase_name)
 
 
-
+def xml(dest_dir, jank_perc, execution_time):
+    xml_file_dir = os.path.join(dest_dir, 'app/build/outputs/androidTest-results/connected')
+    for file in os.listdir(xml_file_dir):
+        xml_file_name = file
+    tree = ElementTree.ElementTree(file = xml_file_dir + '/' + xml_file_name)
+    for element in tree.findall('testcase'):
+        name = element.get('name')
+        for testcase_name, jank_perc, execution_time in zip(testcase_names,list_for_jank_perc,list_for_execution_time):
+            if name == testcase_name:
+                element.set('jank-percentage', jank_perc)
+                element.set('execution-time', execution_time)
+    tree.write("testing.xml")
 
 def main():
     """Run this script with
@@ -331,6 +356,7 @@ def main():
 
     device_id = sys.argv[1:][1] or null
     print 'Using device_id: ' + device_id
+
 
     # Organize test output by device in case multiple devices are being tested.
     dest_dir = os.path.join(dest_dir, "perftesting", device_id)
@@ -360,7 +386,6 @@ def main():
 
     # Connects to the current device, returning a MonkeyDevice object
     print 'Waiting for a device to be connected.'
-    #device = MonkeyRunner.waitForConnection(5, device_id)
     device = None
     print 'Device connected.'
 
@@ -374,7 +399,6 @@ def main():
     enable_dump_permission(sdk_path, device_id, dest_dir, package_name)
     enable_storage_permission(sdk_path, device_id, dest_dir, package_name)
 
-    # open_app(device, package_name)
 
     # Clear the dumpsys data for the next run must be done immediately
     # after open_app().
@@ -385,16 +409,20 @@ def main():
 
     # Device files could be in either location on various devices.
     pull_device_data_files(sdk_path, device_id,
-                           '/storage/emulated/0/Android/data/',
+                           '/storage/emulated/0/Documents/',
                            dest_dir, package_name, '1')
     pull_device_data_files(sdk_path, device_id,
-                           '/storage/emulated/legacy/Android/data/',
+                           '/storage/emulated/legacy/Documents/',
                            dest_dir, package_name, '2')
 
     # Protip1: See comment above.
     # device.press("KEYCODE_POWER", "DOWN_AND_UP")
 
     analyze_data_files(dest_dir)
+
+    # parsing janky frames and execution time to the xml file
+    dest_dir = sys.argv[1:][0] or '.'
+    xml(dest_dir, list_for_jank_perc, list_for_execution_time)
 
 
 if __name__ == '__main__':
