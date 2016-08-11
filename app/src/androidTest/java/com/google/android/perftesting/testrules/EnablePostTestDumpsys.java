@@ -18,6 +18,8 @@ package com.google.android.perftesting.testrules;
 
 import android.os.Trace;
 
+import com.google.android.perftesting.Config;
+
 import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -62,7 +64,7 @@ public class EnablePostTestDumpsys extends ExternalResource {
             builder.command("dumpsys", "gfxinfo", "--reset",
                     // NOTE: Using the android app BuildConfig specifically.
                     //com.google.android.perftesting.BuildConfig.APPLICATION_ID);
-                    "com.skysoft.kkbox.android");
+                    Config.TARGET_PACKAGE_NAME);
             Process process = builder.start();
             process.waitFor();
         } catch (Exception exception) {
@@ -81,7 +83,7 @@ public class EnablePostTestDumpsys extends ExternalResource {
                 // TODO: If less than API level 23 we should remove framestats.
                 processBuilder.command("dumpsys", "gfxinfo",
                         // NOTE: Using the android app BuildConfig specifically.
-                        "com.skysoft.kkbox.android",
+                        Config.TARGET_PACKAGE_NAME,
                         "framestats");
                 processBuilder.redirectErrorStream();
                 Process process = processBuilder.start();
