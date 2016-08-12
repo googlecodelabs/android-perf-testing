@@ -92,6 +92,7 @@ public class EnablePostTestDumpsys extends ExternalResource {
                 bufferedReader = new BufferedReader(
                         new InputStreamReader(process.getInputStream()));
                 String line;
+                fileWriter.append("TestName:" + mTestName + "\n");
                 while ((line = bufferedReader.readLine()) != null) {
                     fileWriter.append(line);
                     fileWriter.append(System.lineSeparator());
