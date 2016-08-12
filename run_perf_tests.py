@@ -218,7 +218,10 @@ def parse_dump_file(filename):
     with open(filename, 'r') as dump_file:
         results = dict()
         for line in dump_file:
+            test_name = re.search(r'TestName:([\w+\.]+)', line)
             match = re.search(r'Janky frames: (\d+) \(([\d\.]+)%\)', line)
+            if test_name is not None:
+                results['Testname'] = str(test_name.group(1))
             if match is not None:
                 results['jankNum'] = int(match.group(1))
                 results['jank_percent'] = float(match.group(2))
@@ -305,9 +308,8 @@ def analyze_data_files(dest_dir):
 
 
 def get_testcase_name(dest_dir, full_filename):
-    get_testcase_name = os.path.dirname(full_filename)
-    testcase_name = re.match(dest_dir + r"/testdata/testdata/c.g.a.perftesting.RunAppUIautomator\_(.*)"
-                             , str(get_testcase_name)).group(1)
+    dump_results = parse_dump_file(full_filename)
+    testcase_name = dump_results['Testname']
     testcase_names.append(testcase_name)
 
 
