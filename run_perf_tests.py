@@ -232,7 +232,7 @@ def parse_executiontime_file(filename):
     with open(filename, 'r') as time_file:
         results = dict()
         for line in time_file:
-            match = re.search(r'Execution Time : ([\d+\.]+) sec', line)
+            match = re.search(r'Execution Time : ([\d+\.]+) ns', line)
             if match is not None:
                 results['execution_time'] = (match.group(1))
         return  results
