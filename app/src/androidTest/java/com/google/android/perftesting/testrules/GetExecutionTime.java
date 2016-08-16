@@ -7,6 +7,8 @@ package com.google.android.perftesting.testrules;
 import android.os.Trace;
 import android.util.Log;
 
+import com.google.android.perftesting.myPerfTest;
+
 import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -17,12 +19,15 @@ import java.io.FileWriter;
 import static com.google.android.perftesting.common.PerfTestingUtils.getTestFile;
 
 
-public class GetExecutionTime extends ExternalResource{
+public class GetExecutionTime extends ExternalResource {
 
     private String mTestName;
     private String mTestClass;
-    private long StartTime;
-    private long EndTime;
+    private long startTime;
+    private long endTime;
+    private long thresholdInMillis;
+
+    private static final String LOG_TAG="GetExecutionTime";
 
     @Override
     public Statement apply(Statement base, Description description) {
@@ -31,38 +36,35 @@ public class GetExecutionTime extends ExternalResource{
         return super.apply(base, description);
     }
 
+    public GetExecutionTime(int thresholdInMillis) {
+        this.thresholdInMillis = thresholdInMillis;
+    }
+
     @Override
     public void before() {
-        try {
-            StartTime = System.nanoTime();
-
-
-        } catch (Exception exception) {
-
-        }
+        begin();
     }
 
     public void after() {
-
 
         FileWriter fileWriter = null;
         BufferedReader bufferedReader = null;
 
         try {
-            EndTime = System.nanoTime();
-
-
             fileWriter = new FileWriter(getTestFile(mTestClass, mTestName, "executiontime" + ".log"));
 
-            long output = EndTime - StartTime;
+            long output = endTime - startTime;
 
-            String str = String.valueOf("Execution Time : "+ output + " ns");
+            String strExecutionTime = String.valueOf("Execution Time : "+ (output/1000000f) + " ms\n");
 
-            fileWriter.append(str);
+            String strExpectedTime = String.valueOf("Expected Time : "+ thresholdInMillis + " ms");
 
+            fileWriter.append(strExecutionTime);
+
+            fileWriter.append(strExpectedTime);
 
         } catch (Exception exception) {
-
+            Log.w(LOG_TAG, "------GetExecutionTime fail--------");
 
         } finally {
             if (fileWriter != null) {
@@ -74,4 +76,17 @@ public class GetExecutionTime extends ExternalResource{
             Trace.endSection();
         }
     }
+
+    public void setThresholdInMillis(long thresholdInMillis) {
+        this.thresholdInMillis = thresholdInMillis;
+    }
+
+    public void begin() {
+        startTime = System.nanoTime();
+    }
+
+    public void end() {
+        endTime = System.nanoTime();
+    }
+
 }

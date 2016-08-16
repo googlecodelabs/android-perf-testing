@@ -41,6 +41,7 @@ DUMPSYS_FILENAME = 'dumpsys.log'
 testcase_names = []
 list_for_jank_perc = []
 list_for_execution_time = []
+list_for_expected_time = []
 
 def perform_test(device, package_name):
     """Execution code for a test run thread."""
@@ -232,9 +233,12 @@ def parse_executiontime_file(filename):
     with open(filename, 'r') as time_file:
         results = dict()
         for line in time_file:
-            match = re.search(r'Execution Time : ([\d+\.]+) ns', line)
-            if match is not None:
-                results['execution_time'] = (match.group(1))
+            exe_time = re.search(r'Execution Time : ([\d+\.]+) ms', line)
+            exp_time = re.search(r'Expected Time : ([\d+\.]+) ms', line)
+            if exe_time is not None:
+                results['execution_time'] = (exe_time.group(1))
+            if exp_time is not None:
+                results['expected_time'] = (exp_time.group(1))
         return  results
 
 
@@ -281,7 +285,15 @@ def analyze_data_files(dest_dir):
                 if fname == 'executiontime.log':
                     executiontime_results = parse_executiontime_file(full_filename)
                     execution_time = executiontime_results['execution_time']
+                    expected_time = executiontime_results['expected_time']
                     list_for_execution_time.append(execution_time)
+                    list_for_expected_time.append(expected_time)
+
+                    ##############  test  ###############
+                    print list_for_execution_time
+                    print list_for_expected_time
+                    ##############  test  ###############
+
                 elif fname == 'test.failure.log':
                     # process test failure logs
                     print ('FAIL: Test failed. See ' + full_filename +
@@ -313,17 +325,29 @@ def get_testcase_name(dest_dir, full_filename):
     testcase_names.append(testcase_name)
 
 
-def xml(dest_dir, jank_perc, execution_time):
+def xml(dest_dir, jank_perc, execution_time, expected_time):
     xml_file_dir = os.path.join(dest_dir, 'app/build/outputs/androidTest-results/connected')
     for file in os.listdir(xml_file_dir):
         xml_file_name = file
     tree = ElementTree.ElementTree(file = xml_file_dir + '/' + xml_file_name)
     for element in tree.findall('testcase'):
         name = element.get('name')
-        for testcase_name, jank_perc, execution_time in zip(testcase_names,list_for_jank_perc,list_for_execution_time):
+        for testcase_name, jank_perc, execution_time, expected_time in zip(testcase_names,list_for_jank_perc,list_for_execution_time,list_for_expected_time):
+
+            convert_execution_time = execution_time
+            float_execution_time = float(convert_execution_time)
+            convert_expected_time = expected_time
+            float_expected_time = float(convert_expected_time)
+
             if name == testcase_name:
                 element.set('jank-percentage', jank_perc)
                 element.set('execution-time', execution_time)
+                element.set('expected-time', expected_time)
+
+                if float_execution_time > float_expected_time:
+                    element.text = '\n    '
+                    ElementTree.SubElement(element,'failure',{'message' : 'Over expected time.'})
+
     tree.write("results.xml")
 
 def main():
@@ -402,7 +426,7 @@ def main():
 
     # adding janky frames and execution time to the xml file
     dest_dir = sys.argv[1:][0] or '.'
-    xml(dest_dir, list_for_jank_perc, list_for_execution_time)
+    xml(dest_dir, list_for_jank_perc, list_for_execution_time,list_for_expected_time)
 
 
 if __name__ == '__main__':
