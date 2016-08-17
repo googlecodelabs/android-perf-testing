@@ -27,7 +27,7 @@ public class GetExecutionTime extends ExternalResource {
     private long endTime;
     private long thresholdInMillis;
 
-    private static final String LOG_TAG="GetExecutionTime";
+    //private static final String LOG_TAG="GetExecutionTime";
 
     @Override
     public Statement apply(Statement base, Description description) {
@@ -41,9 +41,7 @@ public class GetExecutionTime extends ExternalResource {
     }
 
     @Override
-    public void before() {
-        begin();
-    }
+    public void before() { begin(); }
 
     public void after() {
 
@@ -64,7 +62,7 @@ public class GetExecutionTime extends ExternalResource {
             fileWriter.append(strExpectedTime);
 
         } catch (Exception exception) {
-            Log.w(LOG_TAG, "------GetExecutionTime fail--------");
+            //Log.w(LOG_TAG, "------GetExecutionTime fail--------");
 
         } finally {
             if (fileWriter != null) {
