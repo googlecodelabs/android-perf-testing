@@ -47,6 +47,7 @@ public class EnablePostTestDumpsys extends ExternalResource {
 
     private String mTestName;
     private String mTestClass;
+    private double threshold;
 
 //    private static final String LOG_TAG = "EnablePostTestDumpsys";
 
@@ -57,8 +58,24 @@ public class EnablePostTestDumpsys extends ExternalResource {
         return super.apply(base, description);
     }
 
+    public EnablePostTestDumpsys(double threshold) {
+        this.threshold = threshold;
+    }
+
     @Override
     public void before() {
+        begin();
+    }
+
+    public void after() {
+
+    }
+
+    public void setThreshold(double threshold) {
+        this.threshold = threshold;
+    }
+
+    public void begin() {
         try {
             ProcessBuilder builder = new ProcessBuilder();
             builder.command("dumpsys", "gfxinfo", "--reset",
@@ -72,7 +89,7 @@ public class EnablePostTestDumpsys extends ExternalResource {
         }
     }
 
-    public void after() {
+    public void end() {
         if (android.os.Build.VERSION.SDK_INT >= 23) {
             FileWriter fileWriter = null;
             BufferedReader bufferedReader = null;
@@ -92,7 +109,9 @@ public class EnablePostTestDumpsys extends ExternalResource {
                 bufferedReader = new BufferedReader(
                         new InputStreamReader(process.getInputStream()));
                 String line;
+                String strExpectedPercentage = String.valueOf("Expected percentage : "+ threshold + " %");
                 fileWriter.append("TestName:" + mTestName + "\n");
+                fileWriter.append(strExpectedPercentage+ "\n"+ "\n");
                 while ((line = bufferedReader.readLine()) != null) {
                     fileWriter.append(line);
                     fileWriter.append(System.lineSeparator());
