@@ -50,13 +50,13 @@ public class PerfTestTemplate {
 
     public EnableTestTracing mEnableTestTracing = new EnableTestTracing();
 
-    public EnablePostTestDumpsys mEnablePostTestDumpsys = new EnablePostTestDumpsys();
+    public EnablePostTestDumpsys mEnablePostTestDumpsys = new EnablePostTestDumpsys(10);
 
     public EnableLogcatDump mEnableLogcatDump = new EnableLogcatDump();
 
     public EnableNetStatsDump mEnableNetStatsDump = new EnableNetStatsDump();
 
-    public GetExecutionTime mGetExecutionTime = new GetExecutionTime();
+    public GetExecutionTime mGetExecutionTime = new GetExecutionTime(4000);
 
     @Rule
     public TestRule chain = RuleChain
