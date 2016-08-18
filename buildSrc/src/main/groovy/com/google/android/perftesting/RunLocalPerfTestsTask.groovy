@@ -67,7 +67,6 @@ public class RunLocalPerfTestsTask extends DefaultTask {
         }
         if (process.exitValue() != 0) {
 //            throw new GradleException("Monkeyrunner script didn't complete")
-            throw new GradleException("")
         }
 //        mLogger.warn("Monkeyrunner complete")
     }
