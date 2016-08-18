@@ -25,6 +25,7 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.InputStreamReader;
 import java.util.logging.Level;
@@ -68,7 +69,11 @@ public class EnablePostTestDumpsys extends ExternalResource {
     }
 
     public void after() {
-
+        File file = new File(String.valueOf(getTestFile(mTestClass, mTestName, "gfxinfo.dumpsys"
+                + ".log")));
+        if(!file.exists()){
+            end();
+        }
     }
 
     public void setThreshold(double threshold) {
@@ -80,7 +85,6 @@ public class EnablePostTestDumpsys extends ExternalResource {
             ProcessBuilder builder = new ProcessBuilder();
             builder.command("dumpsys", "gfxinfo", "--reset",
                     // NOTE: Using the android app BuildConfig specifically.
-                    //com.google.android.perftesting.BuildConfig.APPLICATION_ID);
                     Config.TARGET_PACKAGE_NAME);
             Process process = builder.start();
             process.waitFor();

@@ -5,9 +5,6 @@
 package com.google.android.perftesting.testrules;
 
 import android.os.Trace;
-import android.util.Log;
-
-import com.google.android.perftesting.myPerfTest;
 
 import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
@@ -24,7 +21,7 @@ public class GetExecutionTime extends ExternalResource {
     private String mTestName;
     private String mTestClass;
     private long startTime;
-    private long endTime;
+    private Long endTime;
     private long thresholdInMillis;
 
     //private static final String LOG_TAG="GetExecutionTime";
@@ -44,6 +41,9 @@ public class GetExecutionTime extends ExternalResource {
     public void before() { begin(); }
 
     public void after() {
+        if (endTime == null){
+            endTime = System.nanoTime();
+        }
 
         FileWriter fileWriter = null;
         BufferedReader bufferedReader = null;
