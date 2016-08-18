@@ -40,6 +40,7 @@ JANK_THRESHOLD = 60
 DUMPSYS_FILENAME = 'dumpsys.log'
 testcase_names = []
 list_for_jank_perc = []
+list_for_expected_perc = []
 list_for_execution_time = []
 list_for_expected_time = []
 
@@ -221,12 +222,16 @@ def parse_dump_file(filename):
         for line in dump_file:
             test_name = re.search(r'TestName:([\w+\.]+)', line)
             match = re.search(r'Janky frames: (\d+) \(([\d\.]+)%\)', line)
+            exp_perc = re.search(r'Expected percentage : ([\d\.]+) %', line)
             if test_name is not None:
                 results['Testname'] = str(test_name.group(1))
             if match is not None:
                 results['jankNum'] = int(match.group(1))
                 results['jank_percent'] = float(match.group(2))
+            if exp_perc is not None:
+                results['expected_percentage'] = (exp_perc.group(1))
         return results
+
 
 
 def parse_executiontime_file(filename):
@@ -271,17 +276,19 @@ def analyze_data_files(dest_dir):
                     # process gfxinfo for janky frames
                     dump_results = parse_dump_file(full_filename)
                     jank_perc = dump_results['jank_percent']
+                    jank_threshold = dump_results['expected_percentage']
                     list_for_jank_perc.append(str(jank_perc))
-                    if jank_perc:
-
-                        if jank_perc > JANK_THRESHOLD:
-                            print ('FAIL: High level of janky frames ' +
-                                   'detected (' + str(jank_perc) + '%)' +
-                                   '. See trace.html for details.')
-                            passed = False
-                    else:
-                        print 'ERROR: No dump results could be found.'
-                        passed = False
+                    list_for_expected_perc.append(str(jank_threshold))
+                    # if jank_perc:
+                    #
+                    #     if jank_perc > JANK_THRESHOLD:
+                    #         print ('FAIL: High level of janky frames ' +
+                    #                'detected (' + str(jank_perc) + '%)' +
+                    #                '. See trace.html for details.')
+                    #         passed = False
+                    # else:
+                    #     print 'ERROR: No dump results could be found.'
+                    #     passed = False
                 if fname == 'executiontime.log':
                     executiontime_results = parse_executiontime_file(full_filename)
                     execution_time = executiontime_results['execution_time']
@@ -324,29 +331,39 @@ def get_testcase_name(dest_dir, full_filename):
     testcase_name = dump_results['Testname']
     testcase_names.append(testcase_name)
 
-
-def xml(dest_dir, jank_perc, execution_time, expected_time):
+def xml(dest_dir, jank_perc, expected_perc, execution_time, expected_time):
     xml_file_dir = os.path.join(dest_dir, 'app/build/outputs/androidTest-results/connected')
     for file in os.listdir(xml_file_dir):
         xml_file_name = file
     tree = ElementTree.ElementTree(file = xml_file_dir + '/' + xml_file_name)
+
     for element in tree.findall('testcase'):
         name = element.get('name')
-        for testcase_name, jank_perc, execution_time, expected_time in zip(testcase_names,list_for_jank_perc,list_for_execution_time,list_for_expected_time):
+        for testcase_name, jank_perc, expected_perc, execution_time, expected_time in zip(testcase_names,list_for_jank_perc,
+                                                                                          list_for_expected_perc,list_for_execution_time,list_for_expected_time):
 
             convert_execution_time = execution_time
             float_execution_time = float(convert_execution_time)
             convert_expected_time = expected_time
             float_expected_time = float(convert_expected_time)
 
+            convert_jank_perc = jank_perc
+            float_jank_perc = float(convert_jank_perc)
+            convert_expected_perc = expected_perc
+            float_expected_perc = float(convert_expected_perc)
+
             if name == testcase_name:
+                element.text = '\n    '
+                ElementTree.SubElement(element,'system-out').text = '<measurement><name>Jank-Percentage (%)</name><value>' + jank_perc + '</value></measurement>' \
+                                                                    + '<measurement><name>Execution-Time (ms)</name><value>' + execution_time + '</value></measurement>'
+
                 element.set('jank-percentage', jank_perc)
+                element.set('expected-percentage', expected_perc)
                 element.set('execution-time', execution_time)
                 element.set('expected-time', expected_time)
 
-                if float_execution_time > float_expected_time:
-                    element.text = '\n    '
-                    ElementTree.SubElement(element,'failure',{'message' : 'Over expected time.'})
+                if float_execution_time > float_expected_time or float_jank_perc > float_expected_perc:
+                    ElementTree.SubElement(element,'failure',{'message' : 'Fail.'})
 
     tree.write("results.xml")
 
@@ -426,7 +443,7 @@ def main():
 
     # adding janky frames and execution time to the xml file
     dest_dir = sys.argv[1:][0] or '.'
-    xml(dest_dir, list_for_jank_perc, list_for_execution_time,list_for_expected_time)
+    xml(dest_dir, list_for_jank_perc, list_for_expected_perc, list_for_execution_time,list_for_expected_time)
 
 
 if __name__ == '__main__':
