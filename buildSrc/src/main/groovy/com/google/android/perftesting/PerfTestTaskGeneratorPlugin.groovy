@@ -119,13 +119,16 @@ public class PerfTestTaskGeneratorPlugin implements Plugin<Project> {
                         outputLine = outputLine.trim()
                         if (!outputLine.startsWith("List of devices attached") && !"".equals(outputLine)) {
                             String[] lineParts = outputLine.split(/\s+/) // The regex groups whitespace.
-                            if (lineParts.length != 6) {
+                            if (lineParts.length > 6 || lineParts.length < 5 ) {
+                                println(lineParts.length)
                                 // "adb devices -l" isn't a formal API so we'll add a sanity check. If
                                 // the 'spec' changes this should point us right to the issue.
                                 throw new Exception("There should always be 6 parts to the output, " +
                                         "double check something isn't wrong: ${outputLine} parsed to " +
                                         "${lineParts}")
                             } else {
+                                println(lineParts.length)
+
                                 devices.add(lineParts[0])
                             }
                         }
