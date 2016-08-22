@@ -73,6 +73,18 @@ public class EnableBatteryStatsDump extends ExternalResource {
 
     @Override
     public void before() {
+        begin();
+    }
+
+    public void after() {
+        File file = new File(String.valueOf(getTestFile(mTestClass, mTestName,
+                "battery.dumpsys.log")));
+        if(!file.exists()){
+            end();
+        }
+    }
+
+    public void begin(){
         if (android.os.Build.VERSION.SDK_INT >= 21) {
             try {
                 ProcessBuilder builder = new ProcessBuilder();
@@ -86,7 +98,7 @@ public class EnableBatteryStatsDump extends ExternalResource {
         }
     }
 
-    public void after() {
+    public void end(){
         if (android.os.Build.VERSION.SDK_INT >= 21) {
             FileWriter fileWriter = null;
             BufferedReader bufferedReader = null;
