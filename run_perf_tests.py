@@ -18,7 +18,6 @@ collecting batterystats, location request information, and a systrace.
 
 from __future__ import with_statement
 from xml.etree import ElementTree
-from xml.dom import minidom
 
 
 import os
@@ -28,7 +27,6 @@ import threading
 import time
 import re
 import sys
-import datetime
 
 
 # Imports the monkeyrunner modules used by this program.
@@ -38,11 +36,7 @@ import datetime
 
 JANK_THRESHOLD = 60
 DUMPSYS_FILENAME = 'dumpsys.log'
-testcase_names = []
-list_for_jank_perc = []
-list_for_expected_perc = []
-list_for_execution_time = []
-list_for_expected_time = []
+
 
 def perform_test(device, package_name):
     """Execution code for a test run thread."""
@@ -220,18 +214,14 @@ def parse_dump_file(filename):
     with open(filename, 'r') as dump_file:
         results = dict()
         for line in dump_file:
-            test_name = re.search(r'TestName:([\w+\.]+)', line)
             match = re.search(r'Janky frames: (\d+) \(([\d\.]+)%\)', line)
             exp_perc = re.search(r'Expected percentage : ([\d\.]+) %', line)
-            if test_name is not None:
-                results['Testname'] = str(test_name.group(1))
             if match is not None:
                 results['jankNum'] = int(match.group(1))
                 results['jank_percent'] = float(match.group(2))
             if exp_perc is not None:
-                results['expected_percentage'] = (exp_perc.group(1))
+                results['expected_percentage'] = float(exp_perc.group(1))
         return results
-
 
 
 def parse_executiontime_file(filename):
@@ -241,10 +231,25 @@ def parse_executiontime_file(filename):
             exe_time = re.search(r'Execution Time : ([\d+\.]+) ms', line)
             exp_time = re.search(r'Expected Time : ([\d+\.]+) ms', line)
             if exe_time is not None:
-                results['execution_time'] = (exe_time.group(1))
+                results['execution_time'] = float(exe_time.group(1))
             if exp_time is not None:
-                results['expected_time'] = (exp_time.group(1))
+                results['expected_time'] = float(exp_time.group(1))
         return  results
+
+
+
+def parse_battery_file(filename):
+     with open(filename, 'r') as battery_file:
+         results = dict()
+         Uid = ''
+         for line in battery_file:
+             search_uid = re.search(r'[\s\w]+\(\d\)[\d\s]+top=([\w]+)\:"([\w\.]+)\"', line)
+             if search_uid is not None:
+                 Uid = search_uid.group(1)
+             power_consumption = re.search(r'\s+Uid\s+' + Uid + ': ([\w.]+)', line)
+             if power_consumption is not None:
+                 results = power_consumption.group(1)
+         return results
 
 
 def analyze_data_files(dest_dir):
@@ -252,6 +257,7 @@ def analyze_data_files(dest_dir):
     overall_passed = True
     test_data_dir = os.path.join(dest_dir, 'testdata')
     for dir_name, sub_dir_list, file_list in os.walk(test_data_dir):
+        # print '~~~!!!!!!!!~~~~' + dir_name
         if dir_name == os.path.join(dest_dir, 'testdata'):
             # in the root folder
             for fname in file_list:
@@ -270,38 +276,7 @@ def analyze_data_files(dest_dir):
 
             for fname in file_list:
                 full_filename = os.path.join(dir_name, fname)
-                if fname == 'gfxinfo.dumpsys.log':
-                    # get the names of testcases
-                    get_testcase_name(dest_dir, full_filename)
-                    # process gfxinfo for janky frames
-                    dump_results = parse_dump_file(full_filename)
-                    jank_perc = dump_results['jank_percent']
-                    jank_threshold = dump_results['expected_percentage']
-                    list_for_jank_perc.append(str(jank_perc))
-                    list_for_expected_perc.append(str(jank_threshold))
-                    # if jank_perc:
-                    #
-                    #     if jank_perc > JANK_THRESHOLD:
-                    #         print ('FAIL: High level of janky frames ' +
-                    #                'detected (' + str(jank_perc) + '%)' +
-                    #                '. See trace.html for details.')
-                    #         passed = False
-                    # else:
-                    #     print 'ERROR: No dump results could be found.'
-                    #     passed = False
-                if fname == 'executiontime.log':
-                    executiontime_results = parse_executiontime_file(full_filename)
-                    execution_time = executiontime_results['execution_time']
-                    expected_time = executiontime_results['expected_time']
-                    list_for_execution_time.append(execution_time)
-                    list_for_expected_time.append(expected_time)
-
-                    ##############  test  ###############
-                    print list_for_execution_time
-                    print list_for_expected_time
-                    ##############  test  ###############
-
-                elif fname == 'test.failure.log':
+                if fname == 'test.failure.log':
                     # process test failure logs
                     print ('FAIL: Test failed. See ' + full_filename +
                            ' for details.')
@@ -312,7 +287,7 @@ def analyze_data_files(dest_dir):
             else:
                 overall_passed = False
 
-    test_complete_file = os.path.join(dest_dir, 'testdata',
+    test_complete_file = os.path.join(dest_dir, 'testdata/testdata',
                                       'testRunComplete.log')
     if not os.path.isfile(test_complete_file):
         overall_passed = False
@@ -326,12 +301,7 @@ def analyze_data_files(dest_dir):
         return 1
 
 
-def get_testcase_name(dest_dir, full_filename):
-    dump_results = parse_dump_file(full_filename)
-    testcase_name = dump_results['Testname']
-    testcase_names.append(testcase_name)
-
-def xml(dest_dir, jank_perc, expected_perc, execution_time, expected_time):
+def xml(dest_dir,test_data_dir):
     xml_file_dir = os.path.join(dest_dir, 'app/build/outputs/androidTest-results/connected')
     for file in os.listdir(xml_file_dir):
         xml_file_name = file
@@ -339,33 +309,47 @@ def xml(dest_dir, jank_perc, expected_perc, execution_time, expected_time):
 
     for element in tree.findall('testcase'):
         name = element.get('name')
-        for testcase_name, jank_perc, expected_perc, execution_time, expected_time in zip(testcase_names,list_for_jank_perc,
-                                                                                          list_for_expected_perc,list_for_execution_time,list_for_expected_time):
-
-            convert_execution_time = execution_time
-            float_execution_time = float(convert_execution_time)
-            convert_expected_time = expected_time
-            float_expected_time = float(convert_expected_time)
-
-            convert_jank_perc = jank_perc
-            float_jank_perc = float(convert_jank_perc)
-            convert_expected_perc = expected_perc
-            float_expected_perc = float(convert_expected_perc)
-
-            if name == testcase_name:
-                element.text = '\n    '
-                ElementTree.SubElement(element,'system-out').text = '<measurement><name>Jank-Percentage (%)</name><value>' + jank_perc + '</value></measurement>' \
-                                                                    + '<measurement><name>Execution-Time (ms)</name><value>' + execution_time + '</value></measurement>'
-
-                element.set('jank-percentage', jank_perc)
-                element.set('expected-percentage', expected_perc)
-                element.set('execution-time', execution_time)
-                element.set('expected-time', expected_time)
-
-                if float_execution_time > float_expected_time or float_jank_perc > float_expected_perc:
-                    ElementTree.SubElement(element,'failure',{'message' : 'Fail.'})
-
+        classname = element.get('classname')
+        folder_name = classname + '_' + name
+        parsing_data_dir = os.path.join(test_data_dir + '/testdata/testdata/', folder_name)
+        for dir_name, sub_dir_list, file_list in os.walk(parsing_data_dir):
+            if dir_name == os.path.join(test_data_dir + '/testdata/testdata/', folder_name):
+                # in a test folder
+                for fname in file_list:
+                    element.text = '\n    '
+                    full_filename = os.path.join(dir_name, fname)
+                    if fname == 'gfxinfo.dumpsys.log':
+                        # process gfxinfo for janky frames
+                        dump_results = parse_dump_file(full_filename)
+                        jank_perc = dump_results['jank_percent']
+                        expected_perc = dump_results['expected_percentage']
+                        # setting attribute
+                        element.set('jank-percentage', str(jank_perc))
+                        element.set('expected-percentage', str(expected_perc))
+                        ElementTree.SubElement(element,'system-out').text = '<measurement><name>Jank-Percentage (%)</name><value>' + str(jank_perc) + '</value></measurement>'
+                        #compared with whether exceeds the standard
+                        if jank_perc > expected_perc:
+                            ElementTree.SubElement(element,'failure',{'message' : 'Janky Frames is too much.'})
+                    if fname == 'executiontime.log':
+                        # process executiontime for execution time
+                        executiontime_results = parse_executiontime_file(full_filename)
+                        execution_time = executiontime_results['execution_time']
+                        expected_time = executiontime_results['expected_time']
+                        # setting attribute
+                        element.set('execution-time', str(execution_time))
+                        element.set('expected-time', str(expected_time))
+                        ElementTree.SubElement(element,'system-out').text = '<measurement><name>Execution-Time (ms)</name><value>' + str(execution_time) + '</value></measurement>'
+                        #compared with whether exceeds the standard
+                        if expected_time > expected_time:
+                            ElementTree.SubElement(element,'failure',{'message' : 'Response Time is exceed.'})
+                    if fname == 'battery.dumpsys.log':
+                        # process battery for power consumption
+                        power_results = parse_battery_file(full_filename)
+                        power_consumption = power_results
+                        element.set('power_consumption', str(power_consumption))
+                        ElementTree.SubElement(element,'system-out').text = '<measurement><name>Jank-Percentage (%)</name><value>' + str(power_consumption) + '</value></measurement>'
     tree.write("results.xml")
+
 
 def main():
     """Run this script with
@@ -443,7 +427,8 @@ def main():
 
     # adding janky frames and execution time to the xml file
     dest_dir = sys.argv[1:][0] or '.'
-    xml(dest_dir, list_for_jank_perc, list_for_expected_perc, list_for_execution_time,list_for_expected_time)
+    test_data_dir = os.path.join(dest_dir, "perftesting", device_id)
+    xml(dest_dir, test_data_dir)
 
 
 if __name__ == '__main__':
