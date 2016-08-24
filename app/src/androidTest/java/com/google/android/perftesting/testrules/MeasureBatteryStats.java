@@ -43,25 +43,17 @@ import static com.google.android.perftesting.common.PerfTestingUtils.getTestFile
  * public EnableBatteryStatsDump mEnableBatteryStatsDump = new EnableBatteryStatsDump();
  * </pre>
  */
-public class EnableBatteryStatsDump extends ExternalResource {
+public class MeasureBatteryStats extends ExternalResource {
 
-    private Logger logger = Logger.getLogger(EnableBatteryStatsDump.class.getName());
-
+    private Logger logger = Logger.getLogger(MeasureBatteryStats.class.getName());
     private String mTestName;
-
     private String mTestClass;
-
+    private double powerUseThresholdMah;
     private File mLogFileAbsoluteLocation = null;
 
-    public EnableBatteryStatsDump() { }
 
-//    private static final String LOG_TAG = "EnableBatteryStatsDump";
-
-    /**
-     * Allow the the log to be written to a specific location.
-     */
-    public EnableBatteryStatsDump(File logFileAbsoluteLocation) {
-        mLogFileAbsoluteLocation = logFileAbsoluteLocation;
+    public MeasureBatteryStats(double powerUseThresholdMah) {
+        this.powerUseThresholdMah = powerUseThresholdMah;
     }
 
     @Override
@@ -82,6 +74,10 @@ public class EnableBatteryStatsDump extends ExternalResource {
         if(!file.exists()){
             end();
         }
+    }
+
+    public void powerUseThresholdMah(double powerUseThresholdMah) {
+        this.powerUseThresholdMah = powerUseThresholdMah;
     }
 
     public void begin(){
