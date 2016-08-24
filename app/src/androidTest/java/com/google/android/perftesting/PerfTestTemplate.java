@@ -42,7 +42,7 @@ import org.junit.runner.RunWith;
 
 @RunWith(AndroidJUnit4.class)
 @SdkSuppress(minSdkVersion = 18)
-// @PerfTest
+//@PerfTest
 public class PerfTestTemplate {
     private static final int LAUNCH_TIMEOUT = 5000;
 
@@ -56,7 +56,7 @@ public class PerfTestTemplate {
 
     public EnableNetStatsDump mEnableNetStatsDump = new EnableNetStatsDump();
 
-    public GetExecutionTime mGetExecutionTime = new GetExecutionTime(4000);
+    public MeasureExecutionTime mMeasureExecutionTime = new MeasureExecutionTime(4000);
 
     @Rule
     public TestRule chain = RuleChain
@@ -64,7 +64,7 @@ public class PerfTestTemplate {
             .around(mEnableTestTracing)
             .around(mEnablePostTestDumpsys)
             .around(mEnableNetStatsDump)
-            .around(mGetExecutionTime);
+            .around(mMeasureExecutionTime);
 
     //----------Beforeclass: Run Before Testcase------------//
     @BeforeClass
