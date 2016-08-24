@@ -16,7 +16,7 @@ import java.io.FileWriter;
 import static com.google.android.perftesting.common.PerfTestingUtils.getTestFile;
 
 
-public class GetExecutionTime extends ExternalResource {
+public class MeasureExecutionTime extends ExternalResource {
 
     private String mTestName;
     private String mTestClass;
@@ -33,7 +33,7 @@ public class GetExecutionTime extends ExternalResource {
         return super.apply(base, description);
     }
 
-    public GetExecutionTime(int thresholdInMillis) {
+    public MeasureExecutionTime(int thresholdInMillis) {
         this.thresholdInMillis = thresholdInMillis;
     }
 

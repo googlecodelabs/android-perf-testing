@@ -25,12 +25,11 @@ import android.support.test.uiautomator.By;
 import android.support.test.uiautomator.UiDevice;
 import android.support.test.uiautomator.Until;
 
-import com.google.android.perftesting.common.PerfTest;
 import com.google.android.perftesting.testrules.EnableLogcatDump;
 import com.google.android.perftesting.testrules.EnableNetStatsDump;
 import com.google.android.perftesting.testrules.EnablePostTestDumpsys;
 import com.google.android.perftesting.testrules.EnableTestTracing;
-import com.google.android.perftesting.testrules.GetExecutionTime;
+import com.google.android.perftesting.testrules.MeasureExecutionTime;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
