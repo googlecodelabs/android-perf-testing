@@ -25,7 +25,6 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileWriter;
 import java.io.InputStreamReader;
 import java.util.logging.Level;
@@ -42,15 +41,13 @@ import static com.google.android.perftesting.common.PerfTestingUtils.getTestFile
  * public EnablePostTestDumpSys mEnablePostTestDumpSys = new EnablePostTestDumpSys();
  * </pre>
  */
-public class EnablePostTestDumpsys extends ExternalResource {
+public class MeasureGraphicStats extends ExternalResource {
 
-    private Logger logger = Logger.getLogger(EnablePostTestDumpsys.class.getName());
-
+    private Logger logger = Logger.getLogger(MeasureGraphicStats.class.getName());
     private String mTestName;
     private String mTestClass;
-    private double threshold;
-
-//    private static final String LOG_TAG = "EnablePostTestDumpsys";
+    private double jankPercentageThreshold;
+    private FileWriter fileWriter = null;
 
     @Override
     public Statement apply(Statement base, Description description) {
@@ -59,8 +56,8 @@ public class EnablePostTestDumpsys extends ExternalResource {
         return super.apply(base, description);
     }
 
-    public EnablePostTestDumpsys(double threshold) {
-        this.threshold = threshold;
+    public MeasureGraphicStats(double jankPercentageThreshold) {
+        this.jankPercentageThreshold = jankPercentageThreshold;
     }
 
     @Override
@@ -69,15 +66,13 @@ public class EnablePostTestDumpsys extends ExternalResource {
     }
 
     public void after() {
-        File file = new File(String.valueOf(getTestFile(mTestClass, mTestName, "gfxinfo.dumpsys"
-                + ".log")));
-        if(!file.exists()){
+        if(fileWriter == null){
             end();
         }
     }
 
-    public void setThreshold(double threshold) {
-        this.threshold = threshold;
+    public void setJankPercentageThreshold(double jankPercentageThreshold) {
+        this.jankPercentageThreshold = jankPercentageThreshold;
     }
 
     public void begin() {
@@ -95,7 +90,6 @@ public class EnablePostTestDumpsys extends ExternalResource {
 
     public void end() {
         if (android.os.Build.VERSION.SDK_INT >= 23) {
-            FileWriter fileWriter = null;
             BufferedReader bufferedReader = null;
             try {
                 Trace.beginSection("Taking Dumpsys");
@@ -113,9 +107,8 @@ public class EnablePostTestDumpsys extends ExternalResource {
                 bufferedReader = new BufferedReader(
                         new InputStreamReader(process.getInputStream()));
                 String line;
-                String strExpectedPercentage = String.valueOf("Expected percentage : "+ threshold + " %");
-                fileWriter.append("TestName:" + mTestName + "\n");
-                fileWriter.append(strExpectedPercentage+ "\n"+ "\n");
+                String strJankPercentageThreshold = String.valueOf("JankPercentageThreshold : "+ jankPercentageThreshold + " %");
+                fileWriter.append(strJankPercentageThreshold + "\n");
                 while ((line = bufferedReader.readLine()) != null) {
                     fileWriter.append(line);
                     fileWriter.append(System.lineSeparator());

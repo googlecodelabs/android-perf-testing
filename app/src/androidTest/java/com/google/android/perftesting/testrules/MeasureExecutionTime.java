@@ -12,19 +12,20 @@ import org.junit.runners.model.Statement;
 
 import java.io.BufferedReader;
 import java.io.FileWriter;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static com.google.android.perftesting.common.PerfTestingUtils.getTestFile;
 
 
 public class MeasureExecutionTime extends ExternalResource {
 
+    private Logger logger = Logger.getLogger(MeasureBatteryStats.class.getName());
     private String mTestName;
     private String mTestClass;
     private long startTime;
     private Long endTime;
-    private long thresholdInMillis;
-
-    //private static final String LOG_TAG="GetExecutionTime";
+    private long executionThresholdMs;
 
     @Override
     public Statement apply(Statement base, Description description) {
@@ -33,8 +34,8 @@ public class MeasureExecutionTime extends ExternalResource {
         return super.apply(base, description);
     }
 
-    public MeasureExecutionTime(int thresholdInMillis) {
-        this.thresholdInMillis = thresholdInMillis;
+    public MeasureExecutionTime(long executionThresholdMs) {
+        this.executionThresholdMs = executionThresholdMs;
     }
 
     @Override
@@ -50,20 +51,13 @@ public class MeasureExecutionTime extends ExternalResource {
 
         try {
             fileWriter = new FileWriter(getTestFile(mTestClass, mTestName, "executiontime" + ".log"));
-
             long output = endTime - startTime;
-
             String strExecutionTime = String.valueOf("Execution Time : "+ (output/1000000f) + " ms\n");
-
-            String strExpectedTime = String.valueOf("Expected Time : "+ thresholdInMillis + " ms");
-
+            String strExecutionThresholdMs = String.valueOf("ExecutionThresholdMs : "+ executionThresholdMs + " ms");
             fileWriter.append(strExecutionTime);
-
-            fileWriter.append(strExpectedTime);
-
+            fileWriter.append(strExecutionThresholdMs);
         } catch (Exception exception) {
-            //Log.w(LOG_TAG, "------GetExecutionTime fail--------");
-
+            logger.log(Level.SEVERE, "Unable to get execution time", exception);
         } finally {
             if (fileWriter != null) {
                 try { fileWriter.close(); } catch (Exception e) { e.printStackTrace(); }
@@ -75,8 +69,8 @@ public class MeasureExecutionTime extends ExternalResource {
         }
     }
 
-    public void setThresholdInMillis(long thresholdInMillis) {
-        this.thresholdInMillis = thresholdInMillis;
+    public void setExecutionThresholdMs(long executionThresholdMs) {
+        this.executionThresholdMs = executionThresholdMs;
     }
 
     public void begin() {

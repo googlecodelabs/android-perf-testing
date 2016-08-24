@@ -40,7 +40,7 @@ import static com.google.android.perftesting.common.PerfTestingUtils.getTestFile
  *
  * <pre>
  * @Rule
- * public EnableBatteryStatsDump mEnableBatteryStatsDump = new EnableBatteryStatsDump();
+ * public MeasureBatteryStats mMeasureBatteryStats = new MeasureBatteryStats();
  * </pre>
  */
 public class MeasureBatteryStats extends ExternalResource {
@@ -69,14 +69,12 @@ public class MeasureBatteryStats extends ExternalResource {
     }
 
     public void after() {
-        File file = new File(String.valueOf(getTestFile(mTestClass, mTestName,
-                "battery.dumpsys.log")));
-        if(!file.exists()){
+        if (mLogFileAbsoluteLocation == null) {
             end();
         }
     }
 
-    public void powerUseThresholdMah(double powerUseThresholdMah) {
+    public void setpowerUseThresholdMah(double powerUseThresholdMah) {
         this.powerUseThresholdMah = powerUseThresholdMah;
     }
 
@@ -114,6 +112,8 @@ public class MeasureBatteryStats extends ExternalResource {
                 bufferedReader = new BufferedReader(
                         new InputStreamReader(process.getInputStream()));
                 String line;
+                String strPowerUseThresholdMah = String.valueOf("PowerUseThresholdMah : "+ powerUseThresholdMah + " mah");
+                fileWriter.append(strPowerUseThresholdMah + "\n");
                 while ((line = bufferedReader.readLine()) != null) {
                     fileWriter.append(line);
                     fileWriter.append(System.lineSeparator());
