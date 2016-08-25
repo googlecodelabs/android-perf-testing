@@ -37,6 +37,7 @@ import org.junit.runners.model.Statement;
 public class EnableTestTracing extends ExternalResource {
 
     private String mTestName;
+//    private static final String LOG_TAG = "EnableTestTracing";
 
     @Override
     public Statement apply(Statement base, Description description) {

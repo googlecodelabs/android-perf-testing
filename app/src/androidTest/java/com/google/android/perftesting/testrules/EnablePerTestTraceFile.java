@@ -16,6 +16,8 @@
 
 package com.google.android.perftesting.testrules;
 
+import com.google.android.perftesting.Config;
+
 import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -34,7 +36,6 @@ import org.junit.runners.model.Statement;
  * </pre>
  */
 public class EnablePerTestTraceFile extends ExternalResource {
-
     private String mTestName;
     private boolean aTraceInUse = false;
 
@@ -50,7 +51,7 @@ public class EnablePerTestTraceFile extends ExternalResource {
             ProcessBuilder builder = new ProcessBuilder();
             builder.command("atrace", "--async_start", "-a",
                     // NOTE: Using the android app BuildConfig specifically.
-                    com.google.android.perftesting.BuildConfig.APPLICATION_ID);
+                    Config.TARGET_PACKAGE_NAME);
             Process process = builder.start();
             process.waitFor();
             if (process.exitValue() == 0) {
@@ -68,7 +69,7 @@ public class EnablePerTestTraceFile extends ExternalResource {
                 ProcessBuilder builder = new ProcessBuilder();
                 builder.command("atrace", "--async_stop", "-a",
                         // NOTE: Using the android app BuildConfig specifically.
-                        com.google.android.perftesting.BuildConfig.APPLICATION_ID);
+                        Config.TARGET_PACKAGE_NAME);
                 Process process = builder.start();
                 process.waitFor();
             } catch (Exception ignored) {

@@ -6,6 +6,9 @@ import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.logging.Logger
 
+import java.util.regex.Matcher
+import java.util.regex.Pattern
+
 /**
  * Gradle Plugin automating the creation of performance testing tasks for each device currently
  * connected to the current system.
@@ -87,6 +90,7 @@ public class PerfTestTaskGeneratorPlugin implements Plugin<Project> {
 
     private List<String> getConnectedDeviceList(Project project) {
         def rootDir = project.rootDir
+
         def localProperties = new File(rootDir, "local.properties")
         def sdkDir = ""
         if (localProperties.exists()) {
@@ -95,7 +99,10 @@ public class PerfTestTaskGeneratorPlugin implements Plugin<Project> {
                 properties.load(instr)
             }
             sdkDir = properties.getProperty('sdk.dir')
+        } else {
+            sdkDir = System.getenv("ANDROID_HOME")
         }
+
         String adbCommand = sdkDir + File.separator + "platform-tools" + File.separator + "adb"
         logger.info("Using ADB command: ${adbCommand}")
         // Compose a list of connected Android devices.
@@ -111,19 +118,14 @@ public class PerfTestTaskGeneratorPlugin implements Plugin<Project> {
             process.inputStream.withReader { processOutputReader ->
                 new BufferedReader(processOutputReader).with { bufferedReader ->
                     String outputLine;
+                    // Use regex named groups to check if devices are connected.
+                    // "adb devices -l" to view detail of connected device : <deviceID> device (usb) product model device,
+                    // if use TCPIP to connect debug, you won't see the usb item.
+                    Pattern pattern = Pattern.compile("^(?<deviceID>[\\w\\.:]+)\\s+device\\s+(usb:\\w+\\s+)?product:\\w+\\s+model:\\w+\\s+device:\\w+");
                     while ((outputLine = bufferedReader.readLine()) != null) {
-                        outputLine = outputLine.trim()
-                        if (!outputLine.startsWith("List of devices attached") && !"".equals(outputLine)) {
-                            String[] lineParts = outputLine.split(/\s+/) // The regex groups whitespace.
-                            if (lineParts.length != 6) {
-                                // "adb devices -l" isn't a formal API so we'll add a sanity check. If
-                                // the 'spec' changes this should point us right to the issue.
-                                throw new Exception("There should always be 6 parts to the output, " +
-                                        "double check something isn't wrong: ${outputLine} parsed to " +
-                                        "${lineParts}")
-                            } else {
-                                devices.add(lineParts[0])
-                            }
+                        Matcher matcher = pattern.matcher(outputLine);
+                        if (matcher.matches()) {
+                            devices.add(matcher.group("deviceID"));
                         }
                     }
                 }

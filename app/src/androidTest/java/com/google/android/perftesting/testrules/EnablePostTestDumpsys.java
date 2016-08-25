@@ -18,6 +18,8 @@ package com.google.android.perftesting.testrules;
 
 import android.os.Trace;
 
+import com.google.android.perftesting.Config;
+
 import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -46,6 +48,8 @@ public class EnablePostTestDumpsys extends ExternalResource {
     private String mTestName;
     private String mTestClass;
 
+//    private static final String LOG_TAG = "EnablePostTestDumpsys";
+
     @Override
     public Statement apply(Statement base, Description description) {
         mTestName = description.getMethodName();
@@ -59,7 +63,8 @@ public class EnablePostTestDumpsys extends ExternalResource {
             ProcessBuilder builder = new ProcessBuilder();
             builder.command("dumpsys", "gfxinfo", "--reset",
                     // NOTE: Using the android app BuildConfig specifically.
-                    com.google.android.perftesting.BuildConfig.APPLICATION_ID);
+                    //com.google.android.perftesting.BuildConfig.APPLICATION_ID);
+                    Config.TARGET_PACKAGE_NAME);
             Process process = builder.start();
             process.waitFor();
         } catch (Exception exception) {
@@ -78,7 +83,7 @@ public class EnablePostTestDumpsys extends ExternalResource {
                 // TODO: If less than API level 23 we should remove framestats.
                 processBuilder.command("dumpsys", "gfxinfo",
                         // NOTE: Using the android app BuildConfig specifically.
-                        com.google.android.perftesting.BuildConfig.APPLICATION_ID,
+                        Config.TARGET_PACKAGE_NAME,
                         "framestats");
                 processBuilder.redirectErrorStream();
                 Process process = processBuilder.start();
@@ -87,6 +92,7 @@ public class EnablePostTestDumpsys extends ExternalResource {
                 bufferedReader = new BufferedReader(
                         new InputStreamReader(process.getInputStream()));
                 String line;
+                fileWriter.append("TestName:" + mTestName + "\n");
                 while ((line = bufferedReader.readLine()) != null) {
                     fileWriter.append(line);
                     fileWriter.append(System.lineSeparator());

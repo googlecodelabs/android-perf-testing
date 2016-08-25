@@ -55,6 +55,8 @@ public class EnableBatteryStatsDump extends ExternalResource {
 
     public EnableBatteryStatsDump() { }
 
+//    private static final String LOG_TAG = "EnableBatteryStatsDump";
+
     /**
      * Allow the the log to be written to a specific location.
      */
@@ -77,6 +79,7 @@ public class EnableBatteryStatsDump extends ExternalResource {
                 builder.command("dumpsys", "batterystats", "--reset");
                 Process process = builder.start();
                 process.waitFor();
+
             } catch (Exception exception) {
                 logger.log(Level.SEVERE, "Unable to reset dumpsys", exception);
             }
@@ -94,6 +97,7 @@ public class EnableBatteryStatsDump extends ExternalResource {
                 processBuilder.command("dumpsys", "batterystats");
                 processBuilder.redirectErrorStream();
                 Process process = processBuilder.start();
+
                 if (mLogFileAbsoluteLocation == null) {
                     mLogFileAbsoluteLocation = getTestFile(mTestClass, mTestName,
                             "battery.dumpsys.log");
