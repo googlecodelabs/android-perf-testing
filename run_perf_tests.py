@@ -34,7 +34,6 @@ import sys
 
 # Percentage of janky frames to detect to warn.
 
-JANK_THRESHOLD = 60
 DUMPSYS_FILENAME = 'dumpsys.log'
 
 
@@ -208,56 +207,78 @@ def run_tests_and_systrace(sdk_path, device, device_id, dest_dir,
     print ('Time between test and trace thread completion: ' +
            str(test_time_completion - trace_time_completion))
 
+def analyze_battery_stats(test_data_dir):
+     failures = []
+     measurements = {}
+     results = (failures, measurements)
 
-def parse_dump_file(filename):
-    """Parse dump file data."""
-    with open(filename, 'r') as dump_file:
-        results = dict()
-        for line in dump_file:
-            match = re.search(r'Janky frames: (\d+) \(([\d\.]+)%\)', line)
-            exp_perc = re.search(r'Expected percentage : ([\d\.]+) %', line)
-            if match is not None:
-                results['jankNum'] = int(match.group(1))
-                results['jank_percent'] = float(match.group(2))
-            if exp_perc is not None:
-                results['expected_percentage'] = float(exp_perc.group(1))
-        return results
-
-
-def parse_executiontime_file(filename):
-    with open(filename, 'r') as time_file:
-        results = dict()
-        for line in time_file:
-            exe_time = re.search(r'Execution Time : ([\d+\.]+) ms', line)
-            exp_time = re.search(r'Expected Time : ([\d+\.]+) ms', line)
-            if exe_time is not None:
-                results['execution_time'] = float(exe_time.group(1))
-            if exp_time is not None:
-                results['expected_time'] = float(exp_time.group(1))
-        return  results
-
-
-
-def parse_battery_file(filename):
-     with open(filename, 'r') as battery_file:
-         results = dict()
-         Uid = ''
-         for line in battery_file:
-             search_uid = re.search(r'[\s\w]+\(\d\)[\d\s]+top=([\w]+)\:"([\w\.]+)\"', line)
-             if search_uid is not None:
-                 Uid = search_uid.group(1)
-             power_consumption = re.search(r'\s+Uid\s+' + Uid + ': ([\w.]+)', line)
-             if power_consumption is not None:
-                 results = power_consumption.group(1)
+     stats_file = os.path.join(test_data_dir, 'battery.dumpsys.log')
+     if not os.path.exists(stats_file):
          return results
 
+     with open(stats_file, 'r') as battery_file:
+         line = battery_file.read()
+         uid = re.search(r'[\s\w]+\(\d\)[\d\s]+top=([\w]+)\:"([\w\.]+)\"', line).group(1)
+         power_consumption = float(re.search(r'\s+Uid\s+' + uid + ': ([\w.]+)', line).group(1))
+         threshold = float(re.search(r'PowerUseThresholdMah : ([\d+\.]+) mah', line).group(1))
+
+         measurements['Power Consumption (mAh)'] = power_consumption
+         if power_consumption > threshold:
+             failures.append('Exceeding power consumption. (threshold = %s)' % threshold)
+
+     return results
+
+def analyze_graphic_stats(test_data_dir):
+    failures = []
+    measurements = {}
+    results = (failures, measurements)
+
+    stats_file = os.path.join(test_data_dir, 'gfxinfo.dumpsys.log')
+    if not os.path.exists(stats_file):
+        return results
+
+    with open(stats_file, 'r') as graphic_file:
+        line = graphic_file.read()
+        jank_percent = re.search(r'Janky frames: (\d+) \(([\d\.]+)%\)', line)
+        jankPercentageThreshold = re.search(r'JankPercentageThreshold : ([\d\.]+) %', line)
+        if jank_percent is not None:
+            measurements['Jank Percentage (%)'] = str(jank_percent.group(2))
+        if jankPercentageThreshold is not None:
+            threshold = float(jankPercentageThreshold.group(1))
+        if float(measurements['Jank Percentage (%)']) > threshold:
+            failures.append('Jank percentage is too high.')
+
+    return results
+
+def analyze_execution_time(test_data_dir):
+    failures = []
+    measurements = {}
+    results = (failures, measurements)
+
+    stats_file = os.path.join(test_data_dir, 'executiontime.log')
+    if not os.path.exists(stats_file):
+        return results
+
+    with open(stats_file, 'r') as time_file:
+        line = time_file.read()
+        execution_time = re.search(r'Execution Time : ([\d+\.]+) ms', line)
+        executionThresholdMs = re.search(r'ExecutionThresholdMs : ([\d+\.]+) ms', line)
+        if execution_time is not None:
+            measurements['Execution Time (ms)'] = str(execution_time.group(1))
+        if executionThresholdMs is not None:
+            threshold = float(executionThresholdMs.group(1))
+        if float(measurements['Execution Time (ms)']) > threshold:
+            failures.append('Taking too much time to response.')
+
+    return results
+
+# def analyze_battery_stats_impl(package_name, stats_dump)
 
 def analyze_data_files(dest_dir):
     """Analyze data files for issues that indicate a test failure."""
     overall_passed = True
     test_data_dir = os.path.join(dest_dir, 'testdata')
     for dir_name, sub_dir_list, file_list in os.walk(test_data_dir):
-        # print '~~~!!!!!!!!~~~~' + dir_name
         if dir_name == os.path.join(dest_dir, 'testdata'):
             # in the root folder
             for fname in file_list:
@@ -301,54 +322,97 @@ def analyze_data_files(dest_dir):
         return 1
 
 
-def xml(dest_dir,test_data_dir):
-    xml_file_dir = os.path.join(dest_dir, 'app/build/outputs/androidTest-results/connected')
+def xml(dest_dir,device_dir):
+    xml_file_dir = os.path.join(dest_dir, 'app', 'build', 'outputs', 'androidTest-results', 'connected')
     for file in os.listdir(xml_file_dir):
         xml_file_name = file
-    tree = ElementTree.ElementTree(file = xml_file_dir + '/' + xml_file_name)
+    tree = ElementTree.ElementTree(file = os.path.join(xml_file_dir, xml_file_name))
+    tree.write("/tmp/results-debug.xml")
 
     for element in tree.findall('testcase'):
         name = element.get('name')
         classname = element.get('classname')
         folder_name = classname + '_' + name
-        parsing_data_dir = os.path.join(test_data_dir + '/testdata/testdata/', folder_name)
-        for dir_name, sub_dir_list, file_list in os.walk(parsing_data_dir):
-            if dir_name == os.path.join(test_data_dir + '/testdata/testdata/', folder_name):
-                # in a test folder
-                for fname in file_list:
-                    element.text = '\n    '
-                    full_filename = os.path.join(dir_name, fname)
-                    if fname == 'gfxinfo.dumpsys.log':
-                        # process gfxinfo for janky frames
-                        dump_results = parse_dump_file(full_filename)
-                        jank_perc = dump_results['jank_percent']
-                        expected_perc = dump_results['expected_percentage']
-                        # setting attribute
-                        element.set('jank-percentage', str(jank_perc))
-                        element.set('expected-percentage', str(expected_perc))
-                        ElementTree.SubElement(element,'system-out').text = '<measurement><name>Jank-Percentage (%)</name><value>' + str(jank_perc) + '</value></measurement>'
-                        #compared with whether exceeds the standard
-                        if jank_perc > expected_perc:
-                            ElementTree.SubElement(element,'failure',{'message' : 'Janky Frames is too much.'})
-                    if fname == 'executiontime.log':
-                        # process executiontime for execution time
-                        executiontime_results = parse_executiontime_file(full_filename)
-                        execution_time = executiontime_results['execution_time']
-                        expected_time = executiontime_results['expected_time']
-                        # setting attribute
-                        element.set('execution-time', str(execution_time))
-                        element.set('expected-time', str(expected_time))
-                        ElementTree.SubElement(element,'system-out').text = '<measurement><name>Execution-Time (ms)</name><value>' + str(execution_time) + '</value></measurement>'
-                        #compared with whether exceeds the standard
-                        if expected_time > expected_time:
-                            ElementTree.SubElement(element,'failure',{'message' : 'Response Time is exceed.'})
-                    if fname == 'battery.dumpsys.log':
-                        # process battery for power consumption
-                        power_results = parse_battery_file(full_filename)
-                        power_consumption = power_results
-                        element.set('power_consumption', str(power_consumption))
-                        ElementTree.SubElement(element,'system-out').text = '<measurement><name>Jank-Percentage (%)</name><value>' + str(power_consumption) + '</value></measurement>'
+        test_data_dir = os.path.join(device_dir,'testdata', 'testdata', folder_name)
+        print test_data_dir
+
+        # ([failure_messages], {measurement_name: measurement_value})
+        failures = []
+        measurements = {}
+
+        _failures, _measurements = analyze_battery_stats(test_data_dir)
+        failures.extend(_failures)
+        measurements.update(_measurements)
+
+        _failures, _measurements = analyze_graphic_stats(test_data_dir)
+        failures.extend(_failures)
+        measurements.update(_measurements)
+
+        _failures, _measurements = analyze_execution_time(test_data_dir)
+        failures.extend(_failures)
+        measurements.update(_measurements)
+
+        print failures, measurements
+
+
+
+        # subElement = ElementTree.SubElement(element,'system-out')
+        # subElement.text = '\n<measurement><name>Jank-Percentage (%)</name><value>' + str(measurements['jank_percent']) + '</value></measurement>\n'\
+        # '<measurement><name>Execution-Time (ms)</name><value>' + str(measurements['execution_time']) + '</value></measurement>\n'\
+        # '<measurement><name>Power-Consumption (mah)</name><value>' + str(measurements['power_consumption']) + '</value></measurement>\n'
+
+        ElementTree.SubElement(element, 'system-out').text = "\n".join(['<measurement><name>%s</name><value>%s</value></measurement>' % (k, v) for k, v in measurements.iteritems()])
+        ElementTree.SubElement(element, 'failure').text = '\n'.join(failures)
+
+        # for index in range(0, len(failures)):
+        #     failureElement.text = '\n' + failures[index]
     tree.write("results.xml")
+
+
+
+
+
+
+
+        # for dir_name, sub_dir_list, file_list in os.walk(parsing_data_dir):
+        #     # if dir_name == os.path.join(test_data_dir + '/testdata/testdata/', folder_name):
+        #         # in a test folder
+        #         for fname in file_list:
+        #             element.text = '\n    '
+        #             subElement = ElementTree.SubElement(element,'system-out')
+        #             full_filename = os.path.join(dir_name, fname)
+        #             if fname == 'gfxinfo.dumpsys.log':
+        #                 # process gfxinfo for janky frames
+        #                 dump_results = parse_graphic_file(full_filename)
+        #                 jank_perc = dump_results['jank_percent']
+        #                 jank_threshold = dump_results['jankPercentageThreshold']
+        #                 # setting <system-out>
+        #                 subElement.text = '<measurement><name>Jank-Percentage (%)</name><value>' + str(jank_perc) + '</value></measurement>\n'
+        #                 #compared with whether exceeds the standard
+        #                 if jank_perc > jank_threshold:
+        #                     ElementTree.SubElement(element,'failure',{'message' : 'Janky Frames is too much.'})
+        #             if fname == 'executiontime.log':
+        #                 # process executiontime for execution time
+        #                 executiontime_results = parse_executiontime_file(full_filename)
+        #                 execution_time = executiontime_results['execution_time']
+        #                 time_threshold = executiontime_results['executionThresholdMs']
+        #                 # setting <system-out>
+        #                 subElement.text = '<measurement><name>Execution-Time (ms)</name><value>' + str(execution_time) + '</value></measurement>\n'
+        #                 #compared with whether exceeds the standard
+        #                 if execution_time > time_threshold:
+        #                     ElementTree.SubElement(element,'failure',{'message' : 'Response Time is exceed.'})
+        #             if fname == 'battery.dumpsys.log':
+        #                 _ = analyze_battery_stats(test_data_dir)
+        #                 # process battery for power consumption
+        #                 # parse_battery_file(full_filename)
+        #                 power_results = parse_battery_file(full_filename)
+        #                 power_consumption = power_results['power_consumption']
+        #                 power_threshold = power_results['powerUseThresholdMah']
+        #                 # setting <system-out>
+        #                 subElement.text = '<measurement><name></name><value>' + str(power_consumption) + '</value></measurement>\n'
+        #                 if power_consumption > power_threshold:
+        #                     ElementTree.SubElement(element,'failure',{'message' : 'Power Consumption is exceed.'})
+    # tree.write("results.xml")
 
 
 def main():
@@ -427,8 +491,8 @@ def main():
 
     # adding janky frames and execution time to the xml file
     dest_dir = sys.argv[1:][0] or '.'
-    test_data_dir = os.path.join(dest_dir, "perftesting", device_id)
-    xml(dest_dir, test_data_dir)
+    device_dir = os.path.join(dest_dir, "perftesting", device_id)
+    xml(dest_dir, device_dir)
 
 
 if __name__ == '__main__':
