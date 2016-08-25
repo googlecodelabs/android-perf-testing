@@ -272,8 +272,6 @@ def analyze_execution_time(test_data_dir):
 
     return results
 
-# def analyze_battery_stats_impl(package_name, stats_dump)
-
 def analyze_data_files(dest_dir):
     """Analyze data files for issues that indicate a test failure."""
     overall_passed = True
@@ -352,67 +350,11 @@ def xml(dest_dir,device_dir):
         failures.extend(_failures)
         measurements.update(_measurements)
 
-        print failures, measurements
-
-
-
-        # subElement = ElementTree.SubElement(element,'system-out')
-        # subElement.text = '\n<measurement><name>Jank-Percentage (%)</name><value>' + str(measurements['jank_percent']) + '</value></measurement>\n'\
-        # '<measurement><name>Execution-Time (ms)</name><value>' + str(measurements['execution_time']) + '</value></measurement>\n'\
-        # '<measurement><name>Power-Consumption (mah)</name><value>' + str(measurements['power_consumption']) + '</value></measurement>\n'
-
         ElementTree.SubElement(element, 'system-out').text = "\n".join(['<measurement><name>%s</name><value>%s</value></measurement>' % (k, v) for k, v in measurements.iteritems()])
         ElementTree.SubElement(element, 'failure').text = '\n'.join(failures)
 
-        # for index in range(0, len(failures)):
-        #     failureElement.text = '\n' + failures[index]
     tree.write("results.xml")
 
-
-
-
-
-
-
-        # for dir_name, sub_dir_list, file_list in os.walk(parsing_data_dir):
-        #     # if dir_name == os.path.join(test_data_dir + '/testdata/testdata/', folder_name):
-        #         # in a test folder
-        #         for fname in file_list:
-        #             element.text = '\n    '
-        #             subElement = ElementTree.SubElement(element,'system-out')
-        #             full_filename = os.path.join(dir_name, fname)
-        #             if fname == 'gfxinfo.dumpsys.log':
-        #                 # process gfxinfo for janky frames
-        #                 dump_results = parse_graphic_file(full_filename)
-        #                 jank_perc = dump_results['jank_percent']
-        #                 jank_threshold = dump_results['jankPercentageThreshold']
-        #                 # setting <system-out>
-        #                 subElement.text = '<measurement><name>Jank-Percentage (%)</name><value>' + str(jank_perc) + '</value></measurement>\n'
-        #                 #compared with whether exceeds the standard
-        #                 if jank_perc > jank_threshold:
-        #                     ElementTree.SubElement(element,'failure',{'message' : 'Janky Frames is too much.'})
-        #             if fname == 'executiontime.log':
-        #                 # process executiontime for execution time
-        #                 executiontime_results = parse_executiontime_file(full_filename)
-        #                 execution_time = executiontime_results['execution_time']
-        #                 time_threshold = executiontime_results['executionThresholdMs']
-        #                 # setting <system-out>
-        #                 subElement.text = '<measurement><name>Execution-Time (ms)</name><value>' + str(execution_time) + '</value></measurement>\n'
-        #                 #compared with whether exceeds the standard
-        #                 if execution_time > time_threshold:
-        #                     ElementTree.SubElement(element,'failure',{'message' : 'Response Time is exceed.'})
-        #             if fname == 'battery.dumpsys.log':
-        #                 _ = analyze_battery_stats(test_data_dir)
-        #                 # process battery for power consumption
-        #                 # parse_battery_file(full_filename)
-        #                 power_results = parse_battery_file(full_filename)
-        #                 power_consumption = power_results['power_consumption']
-        #                 power_threshold = power_results['powerUseThresholdMah']
-        #                 # setting <system-out>
-        #                 subElement.text = '<measurement><name></name><value>' + str(power_consumption) + '</value></measurement>\n'
-        #                 if power_consumption > power_threshold:
-        #                     ElementTree.SubElement(element,'failure',{'message' : 'Power Consumption is exceed.'})
-    # tree.write("results.xml")
 
 
 def main():
