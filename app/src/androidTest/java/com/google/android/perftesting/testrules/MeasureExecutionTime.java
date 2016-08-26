@@ -25,7 +25,7 @@ public class MeasureExecutionTime extends ExternalResource {
     private String mTestClass;
     private long startTime;
     private Long endTime;
-    private long executionThresholdMs;
+    private long ThresholdMillis;
 
     @Override
     public Statement apply(Statement base, Description description) {
@@ -34,8 +34,8 @@ public class MeasureExecutionTime extends ExternalResource {
         return super.apply(base, description);
     }
 
-    public MeasureExecutionTime(long executionThresholdMs) {
-        this.executionThresholdMs = executionThresholdMs;
+    public MeasureExecutionTime(long ThresholdMillis) {
+        this.ThresholdMillis = ThresholdMillis;
     }
 
     @Override
@@ -53,7 +53,7 @@ public class MeasureExecutionTime extends ExternalResource {
             fileWriter = new FileWriter(getTestFile(mTestClass, mTestName, "executiontime" + ".log"));
             long output = endTime - startTime;
             String strExecutionTime = String.valueOf("Execution Time : "+ (output/1000000f) + " ms\n");
-            String strExecutionThresholdMs = String.valueOf("ExecutionThresholdMs : "+ executionThresholdMs + " ms");
+            String strExecutionThresholdMs = String.valueOf("ThresholdMillis : "+ ThresholdMillis + " ms");
             fileWriter.append(strExecutionTime);
             fileWriter.append(strExecutionThresholdMs);
         } catch (Exception exception) {
@@ -69,8 +69,8 @@ public class MeasureExecutionTime extends ExternalResource {
         }
     }
 
-    public void setExecutionThresholdMs(long executionThresholdMs) {
-        this.executionThresholdMs = executionThresholdMs;
+    public void setThresholdMillis(long ThresholdMillis) {
+        this.ThresholdMillis = ThresholdMillis;
     }
 
     public void begin() {
