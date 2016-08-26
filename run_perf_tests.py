@@ -262,7 +262,7 @@ def analyze_execution_time(test_data_dir):
     with open(stats_file, 'r') as time_file:
         line = time_file.read()
         execution_time = re.search(r'Execution Time : ([\d+\.]+) ms', line)
-        executionThresholdMs = re.search(r'ExecutionThresholdMs : ([\d+\.]+) ms', line)
+        executionThresholdMs = re.search(r'ThresholdMillis : ([\d+\.]+) ms', line)
         if execution_time is not None:
             measurements['Execution Time (ms)'] = str(execution_time.group(1))
         if executionThresholdMs is not None:
@@ -306,7 +306,7 @@ def analyze_data_files(dest_dir):
             else:
                 overall_passed = False
 
-    test_complete_file = os.path.join(dest_dir, 'testdata/testdata',
+    test_complete_file = os.path.join(dest_dir, 'testdata', 'testdata',
                                       'testRunComplete.log')
     if not os.path.isfile(test_complete_file):
         overall_passed = False
@@ -325,14 +325,12 @@ def xml(dest_dir,device_dir):
     for file in os.listdir(xml_file_dir):
         xml_file_name = file
     tree = ElementTree.ElementTree(file = os.path.join(xml_file_dir, xml_file_name))
-    tree.write("/tmp/results-debug.xml")
 
     for element in tree.findall('testcase'):
         name = element.get('name')
         classname = element.get('classname')
         folder_name = classname + '_' + name
         test_data_dir = os.path.join(device_dir,'testdata', 'testdata', folder_name)
-        print test_data_dir
 
         # ([failure_messages], {measurement_name: measurement_value})
         failures = []
@@ -351,7 +349,8 @@ def xml(dest_dir,device_dir):
         measurements.update(_measurements)
 
         ElementTree.SubElement(element, 'system-out').text = "\n".join(['<measurement><name>%s</name><value>%s</value></measurement>' % (k, v) for k, v in measurements.iteritems()])
-        ElementTree.SubElement(element, 'failure').text = '\n'.join(failures)
+        if failures:
+            ElementTree.SubElement(element, 'failure').text = '\n'.join(failures)
 
     tree.write("results.xml")
 
