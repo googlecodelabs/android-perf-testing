@@ -239,14 +239,12 @@ def analyze_graphic_stats(test_data_dir):
 
     with open(stats_file, 'r') as graphic_file:
         line = graphic_file.read()
-        jank_percent = re.search(r'Janky frames: (\d+) \(([\d\.]+)%\)', line)
-        jankPercentageThreshold = re.search(r'JankPercentageThreshold : ([\d\.]+) %', line)
-        if jank_percent is not None:
-            measurements['Jank Percentage (%)'] = str(jank_percent.group(2))
-        if jankPercentageThreshold is not None:
-            threshold = float(jankPercentageThreshold.group(1))
-        if float(measurements['Jank Percentage (%)']) > threshold:
-            failures.append('Jank percentage is too high.')
+        jank_percent = float(re.search(r'Janky frames: (\d+) \(([\d\.]+)%\)', line).group(2))
+        threshold = float(re.search(r'JankPercentageThreshold : ([\d\.]+) %', line).group(1))
+
+        measurements['Jank Percentage (%)'] = jank_percent
+        if jank_percent > threshold:
+            failures.append('Jank percentage is too high. (threshold = %s)' % threshold)
 
     return results
 
@@ -261,14 +259,12 @@ def analyze_execution_time(test_data_dir):
 
     with open(stats_file, 'r') as time_file:
         line = time_file.read()
-        execution_time = re.search(r'Execution Time : ([\d+\.]+) ms', line)
-        executionThresholdMs = re.search(r'ThresholdMillis : ([\d+\.]+) ms', line)
-        if execution_time is not None:
-            measurements['Execution Time (ms)'] = str(execution_time.group(1))
-        if executionThresholdMs is not None:
-            threshold = float(executionThresholdMs.group(1))
-        if float(measurements['Execution Time (ms)']) > threshold:
-            failures.append('Taking too much time to response.')
+        execution_time = float(re.search(r'Execution Time : ([\d+\.]+) ms', line).group(1))
+        threshold = float(re.search(r'ThresholdMillis : ([\d+\.]+) ms', line).group(1))
+
+        measurements['Execution Time (ms)'] = execution_time
+        if execution_time > threshold:
+            failures.append('Taking too much time to response. (threshold = %s)' % threshold)
 
     return results
 
