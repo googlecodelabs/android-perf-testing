@@ -112,7 +112,7 @@ public class MeasureBatteryStats extends ExternalResource {
                 bufferedReader = new BufferedReader(
                         new InputStreamReader(process.getInputStream()));
                 String line;
-                String strPowerUseThresholdMah = String.valueOf("PowerUseThresholdMah : "+ powerUseThresholdMah + " mah");
+                String strPowerUseThresholdMah = "PowerUseThresholdMah : " + powerUseThresholdMah + " mah";
                 fileWriter.append(strPowerUseThresholdMah + "\n");
                 while ((line = bufferedReader.readLine()) != null) {
                     fileWriter.append(line);
