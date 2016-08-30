@@ -18,13 +18,12 @@ package com.google.android.perftesting.testrules;
 
 import android.os.Trace;
 
-import com.google.android.perftesting.Config;
-
 import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.InputStreamReader;
 import java.util.logging.Level;
@@ -33,22 +32,29 @@ import java.util.logging.Logger;
 import static com.google.android.perftesting.common.PerfTestingUtils.getTestFile;
 
 /**
- * This rule executes a dumpsys graphics data dump after performing the test. If the API level is
- * less than 23 then this rule will do nothing since this dumpsys command isn't supported.
+ * This rule resets battery stats before a test and executes a dumpsys for batterystats after
+ * performing the test. If the API level is less than 21 then this rule will do nothing since
+ * this dumpsys command isn't supported. It has limited use for short tests and is meant for tests
+ * you would typically mark as Large. For short tests you can manually use this in a
+ * {@code org.junit.runner.notification.RunListener}.
  *
  * <pre>
  * @Rule
- * public EnablePostTestDumpSys mEnablePostTestDumpSys = new EnablePostTestDumpSys();
+ * public MeasureBatteryStats mMeasureBatteryStats = new MeasureBatteryStats();
  * </pre>
  */
-public class EnablePostTestDumpsys extends ExternalResource {
+public class MeasureBatteryStats extends ExternalResource {
 
-    private Logger logger = Logger.getLogger(EnablePostTestDumpsys.class.getName());
-
+    private Logger logger = Logger.getLogger(MeasureBatteryStats.class.getName());
     private String mTestName;
     private String mTestClass;
+    private double powerUseThresholdMah;
+    private File mLogFileAbsoluteLocation = null;
 
-//    private static final String LOG_TAG = "EnablePostTestDumpsys";
+
+    public MeasureBatteryStats(double powerUseThresholdMah) {
+        this.powerUseThresholdMah = powerUseThresholdMah;
+    }
 
     @Override
     public Statement apply(Statement base, Description description) {
@@ -59,40 +65,55 @@ public class EnablePostTestDumpsys extends ExternalResource {
 
     @Override
     public void before() {
-        try {
-            ProcessBuilder builder = new ProcessBuilder();
-            builder.command("dumpsys", "gfxinfo", "--reset",
-                    // NOTE: Using the android app BuildConfig specifically.
-                    //com.google.android.perftesting.BuildConfig.APPLICATION_ID);
-                    Config.TARGET_PACKAGE_NAME);
-            Process process = builder.start();
-            process.waitFor();
-        } catch (Exception exception) {
-            logger.log(Level.SEVERE, "Unable to reset dumpsys", exception);
-        }
+        begin();
     }
 
     public void after() {
-        if (android.os.Build.VERSION.SDK_INT >= 23) {
+        if (mLogFileAbsoluteLocation == null) {
+            end();
+        }
+    }
+
+    public void setpowerUseThresholdMah(double powerUseThresholdMah) {
+        this.powerUseThresholdMah = powerUseThresholdMah;
+    }
+
+    public void begin(){
+        if (android.os.Build.VERSION.SDK_INT >= 21) {
+            try {
+                ProcessBuilder builder = new ProcessBuilder();
+                builder.command("dumpsys", "batterystats", "--reset");
+                Process process = builder.start();
+                process.waitFor();
+
+            } catch (Exception exception) {
+                logger.log(Level.SEVERE, "Unable to reset dumpsys", exception);
+            }
+        }
+    }
+
+    public void end(){
+        if (android.os.Build.VERSION.SDK_INT >= 21) {
             FileWriter fileWriter = null;
             BufferedReader bufferedReader = null;
             try {
-                Trace.beginSection("Taking Dumpsys");
+                Trace.beginSection("Taking battery dumpsys");
                 ProcessBuilder processBuilder = new ProcessBuilder();
 
-                // TODO: If less than API level 23 we should remove framestats.
-                processBuilder.command("dumpsys", "gfxinfo",
-                        // NOTE: Using the android app BuildConfig specifically.
-                        Config.TARGET_PACKAGE_NAME,
-                        "framestats");
+                processBuilder.command("dumpsys", "batterystats");
                 processBuilder.redirectErrorStream();
                 Process process = processBuilder.start();
-                fileWriter = new FileWriter(getTestFile(mTestClass, mTestName, "gfxinfo.dumpsys"
-                        + ".log"));
+
+                if (mLogFileAbsoluteLocation == null) {
+                    mLogFileAbsoluteLocation = getTestFile(mTestClass, mTestName,
+                            "battery.dumpsys.log");
+                }
+                fileWriter = new FileWriter(mLogFileAbsoluteLocation);
                 bufferedReader = new BufferedReader(
                         new InputStreamReader(process.getInputStream()));
                 String line;
-                fileWriter.append("TestName:" + mTestName + "\n");
+                String strPowerUseThresholdMah = "PowerUseThresholdMah : " + powerUseThresholdMah + " mah";
+                fileWriter.append(strPowerUseThresholdMah + "\n");
                 while ((line = bufferedReader.readLine()) != null) {
                     fileWriter.append(line);
                     fileWriter.append(System.lineSeparator());
@@ -111,7 +132,6 @@ public class EnablePostTestDumpsys extends ExternalResource {
                 if (bufferedReader != null) {
                     try { bufferedReader.close(); } catch (Exception e) { e.printStackTrace(); }
                 }
-                Trace.endSection();
             }
         }
     }

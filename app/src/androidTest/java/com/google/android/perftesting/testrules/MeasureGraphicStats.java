@@ -18,12 +18,13 @@ package com.google.android.perftesting.testrules;
 
 import android.os.Trace;
 
+import com.google.android.perftesting.Config;
+
 import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileWriter;
 import java.io.InputStreamReader;
 import java.util.logging.Level;
@@ -32,37 +33,21 @@ import java.util.logging.Logger;
 import static com.google.android.perftesting.common.PerfTestingUtils.getTestFile;
 
 /**
- * This rule resets battery stats before a test and executes a dumpsys for batterystats after
- * performing the test. If the API level is less than 21 then this rule will do nothing since
- * this dumpsys command isn't supported. It has limited use for short tests and is meant for tests
- * you would typically mark as Large. For short tests you can manually use this in a
- * {@code org.junit.runner.notification.RunListener}.
+ * This rule executes a dumpsys graphics data dump after performing the test. If the API level is
+ * less than 23 then this rule will do nothing since this dumpsys command isn't supported.
  *
  * <pre>
  * @Rule
- * public EnableBatteryStatsDump mEnableBatteryStatsDump = new EnableBatteryStatsDump();
+ * public EnablePostTestDumpSys mEnablePostTestDumpSys = new EnablePostTestDumpSys();
  * </pre>
  */
-public class EnableBatteryStatsDump extends ExternalResource {
+public class MeasureGraphicStats extends ExternalResource {
 
-    private Logger logger = Logger.getLogger(EnableBatteryStatsDump.class.getName());
-
+    private Logger logger = Logger.getLogger(MeasureGraphicStats.class.getName());
     private String mTestName;
-
     private String mTestClass;
-
-    private File mLogFileAbsoluteLocation = null;
-
-    public EnableBatteryStatsDump() { }
-
-//    private static final String LOG_TAG = "EnableBatteryStatsDump";
-
-    /**
-     * Allow the the log to be written to a specific location.
-     */
-    public EnableBatteryStatsDump(File logFileAbsoluteLocation) {
-        mLogFileAbsoluteLocation = logFileAbsoluteLocation;
-    }
+    private double jankPercentageThreshold;
+    private FileWriter fileWriter = null;
 
     @Override
     public Statement apply(Statement base, Description description) {
@@ -71,41 +56,59 @@ public class EnableBatteryStatsDump extends ExternalResource {
         return super.apply(base, description);
     }
 
+    public MeasureGraphicStats(double jankPercentageThreshold) {
+        this.jankPercentageThreshold = jankPercentageThreshold;
+    }
+
     @Override
     public void before() {
-        if (android.os.Build.VERSION.SDK_INT >= 21) {
-            try {
-                ProcessBuilder builder = new ProcessBuilder();
-                builder.command("dumpsys", "batterystats", "--reset");
-                Process process = builder.start();
-                process.waitFor();
-
-            } catch (Exception exception) {
-                logger.log(Level.SEVERE, "Unable to reset dumpsys", exception);
-            }
-        }
+        begin();
     }
 
     public void after() {
-        if (android.os.Build.VERSION.SDK_INT >= 21) {
-            FileWriter fileWriter = null;
+        if(fileWriter == null){
+            end();
+        }
+    }
+
+    public void setJankPercentageThreshold(double jankPercentageThreshold) {
+        this.jankPercentageThreshold = jankPercentageThreshold;
+    }
+
+    public void begin() {
+        try {
+            ProcessBuilder builder = new ProcessBuilder();
+            builder.command("dumpsys", "gfxinfo", "--reset",
+                    // NOTE: Using the android app BuildConfig specifically.
+                    Config.TARGET_PACKAGE_NAME);
+            Process process = builder.start();
+            process.waitFor();
+        } catch (Exception exception) {
+            logger.log(Level.SEVERE, "Unable to reset dumpsys", exception);
+        }
+    }
+
+    public void end() {
+        if (android.os.Build.VERSION.SDK_INT >= 23) {
             BufferedReader bufferedReader = null;
             try {
-                Trace.beginSection("Taking battery dumpsys");
+                Trace.beginSection("Taking Dumpsys");
                 ProcessBuilder processBuilder = new ProcessBuilder();
 
-                processBuilder.command("dumpsys", "batterystats");
+                // TODO: If less than API level 23 we should remove framestats.
+                processBuilder.command("dumpsys", "gfxinfo",
+                        // NOTE: Using the android app BuildConfig specifically.
+                        Config.TARGET_PACKAGE_NAME,
+                        "framestats");
                 processBuilder.redirectErrorStream();
                 Process process = processBuilder.start();
-
-                if (mLogFileAbsoluteLocation == null) {
-                    mLogFileAbsoluteLocation = getTestFile(mTestClass, mTestName,
-                            "battery.dumpsys.log");
-                }
-                fileWriter = new FileWriter(mLogFileAbsoluteLocation);
+                fileWriter = new FileWriter(getTestFile(mTestClass, mTestName, "gfxinfo.dumpsys"
+                        + ".log"));
                 bufferedReader = new BufferedReader(
                         new InputStreamReader(process.getInputStream()));
                 String line;
+                String strJankPercentageThreshold = "JankPercentageThreshold : " + jankPercentageThreshold + " %";
+                fileWriter.append(strJankPercentageThreshold + "\n");
                 while ((line = bufferedReader.readLine()) != null) {
                     fileWriter.append(line);
                     fileWriter.append(System.lineSeparator());
@@ -124,6 +127,7 @@ public class EnableBatteryStatsDump extends ExternalResource {
                 if (bufferedReader != null) {
                     try { bufferedReader.close(); } catch (Exception e) { e.printStackTrace(); }
                 }
+                Trace.endSection();
             }
         }
     }

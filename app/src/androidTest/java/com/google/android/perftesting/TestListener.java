@@ -22,7 +22,6 @@ import android.support.annotation.NonNull;
 import android.util.Log;
 
 import com.google.android.perftesting.common.PerfTestingUtils;
-import com.google.android.perftesting.testrules.EnableBatteryStatsDump;
 import com.google.android.perftesting.testrules.EnableDeviceGetPropsInfo;
 
 import org.junit.runner.Description;
@@ -47,7 +46,6 @@ import java.io.Reader;
 public class TestListener extends RunListener {
     private static final String LOG_TAG = "TestListener";
     public static final String TEST_DATA_SUBDIR_NAME = "testdata";
-    public EnableBatteryStatsDump mEnableBatteryStatsDump;
     public EnableDeviceGetPropsInfo mEnableDeviceGetPropsInfo;
 
     // TODO(developer): Uncomment the following two methods to enable log files to be pulled as well as battery and location request information to be requested.
@@ -57,10 +55,6 @@ public class TestListener extends RunListener {
         // Cleanup data from past test runs.
         deleteExistingTestFilesInAppData();
         deleteExistingTestFilesInExternalData();
-
-        mEnableBatteryStatsDump = new EnableBatteryStatsDump(
-                PerfTestingUtils.getTestRunFile("batterystats.dumpsys.log"));
-        mEnableBatteryStatsDump.before();
 
         mEnableDeviceGetPropsInfo = new EnableDeviceGetPropsInfo(
                 PerfTestingUtils.getTestRunFile("getprops.log"));
@@ -79,12 +73,6 @@ public class TestListener extends RunListener {
 
         try {
             Log.w(LOG_TAG, "Test run finished");
-
-            if (mEnableBatteryStatsDump != null) {
-                mEnableBatteryStatsDump.after();
-            }
-
-            Log.w(LOG_TAG, "Battery stats collected.");
 
             if (mEnableDeviceGetPropsInfo != null) {
                 mEnableDeviceGetPropsInfo.after();

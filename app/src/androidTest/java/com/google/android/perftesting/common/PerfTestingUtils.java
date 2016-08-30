@@ -74,15 +74,7 @@ public class PerfTestingUtils {
             return null;
         }
         String base = className + "_" + testName;
-
-        // Shorten the common strings so "com.google.android" comes out as "c.g.a" for brevity.
-        base = base.replace("com", "c")
-                   .replace("google", "g")
-                   .replace("android", "a")
-                   .replace("perfmatters", "pm")
-                   .replace("automatingperformancetesting", "apt");
         return base;
-
     }
 
     /**
