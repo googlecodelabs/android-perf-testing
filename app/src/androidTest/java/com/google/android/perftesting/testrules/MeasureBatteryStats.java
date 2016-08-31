@@ -18,6 +18,8 @@ package com.google.android.perftesting.testrules;
 
 import android.os.Trace;
 
+import com.google.android.perftesting.Config;
+
 import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -25,6 +27,7 @@ import org.junit.runners.model.Statement;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -50,6 +53,7 @@ public class MeasureBatteryStats extends ExternalResource {
     private String mTestClass;
     private double powerUseThresholdMah;
     private File mLogFileAbsoluteLocation = null;
+    private FileWriter fileWriter = null;
 
 
     public MeasureBatteryStats(double powerUseThresholdMah) {
@@ -86,6 +90,8 @@ public class MeasureBatteryStats extends ExternalResource {
                 Process process = builder.start();
                 process.waitFor();
 
+                creatPackageNameFile();
+
             } catch (Exception exception) {
                 logger.log(Level.SEVERE, "Unable to reset dumpsys", exception);
             }
@@ -112,7 +118,7 @@ public class MeasureBatteryStats extends ExternalResource {
                 bufferedReader = new BufferedReader(
                         new InputStreamReader(process.getInputStream()));
                 String line;
-                String strPowerUseThresholdMah = String.valueOf("PowerUseThresholdMah : "+ powerUseThresholdMah + " mah");
+                String strPowerUseThresholdMah = "PowerUseThresholdMah : "+ powerUseThresholdMah + " mah";
                 fileWriter.append(strPowerUseThresholdMah + "\n");
                 while ((line = bufferedReader.readLine()) != null) {
                     fileWriter.append(line);
@@ -135,4 +141,25 @@ public class MeasureBatteryStats extends ExternalResource {
             }
         }
     }
+
+    private void creatPackageNameFile() throws IOException, InterruptedException {
+        if (android.os.Build.VERSION.SDK_INT >= 23) {
+            try {
+
+                fileWriter = new FileWriter(getTestFile(mTestClass, mTestName, "package_name.log"));
+
+                String package_name = "Package Name : " + Config.TARGET_PACKAGE_NAME;
+                fileWriter.append(package_name);
+
+            } catch (Exception exception) {
+
+            } finally {
+                if (fileWriter != null) {
+                    try {fileWriter.close(); } catch (Exception e) { e.printStackTrace(); }
+                }
+            }
+        }
+
+    }
+
 }
