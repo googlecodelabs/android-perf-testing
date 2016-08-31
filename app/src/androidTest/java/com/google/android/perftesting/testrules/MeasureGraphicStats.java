@@ -107,7 +107,7 @@ public class MeasureGraphicStats extends ExternalResource {
                 bufferedReader = new BufferedReader(
                         new InputStreamReader(process.getInputStream()));
                 String line;
-                String strJankPercentageThreshold = "JankPercentageThreshold : "+ jankPercentageThreshold + " %";
+                String strJankPercentageThreshold = "JankPercentageThreshold : " + jankPercentageThreshold + " %";
                 fileWriter.append(strJankPercentageThreshold + "\n");
                 while ((line = bufferedReader.readLine()) != null) {
                     fileWriter.append(line);
