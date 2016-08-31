@@ -34,8 +34,6 @@ import sys
 
 # Percentage of janky frames to detect to warn.
 
-DUMPSYS_FILENAME = 'dumpsys.log'
-
 
 def perform_test(device, package_name):
     """Execution code for a test run thread."""
@@ -207,26 +205,35 @@ def run_tests_and_systrace(sdk_path, device, device_id, dest_dir,
     print ('Time between test and trace thread completion: ' +
            str(test_time_completion - trace_time_completion))
 
+def get_package_name(test_data_dir):
+    package_file = os.path.join(test_data_dir, 'package_name.log')
+
+    with open(package_file, 'r') as package_file:
+        line = package_file.read()
+        package_name = re.search(r'Package Name : ([\w.]+)', line).group(1)
+    return package_name
+
+
 def analyze_battery_stats(test_data_dir):
-     failures = []
-     measurements = {}
-     results = (failures, measurements)
+    failures = []
+    measurements = {}
+    results = (failures, measurements)
 
-     stats_file = os.path.join(test_data_dir, 'battery.dumpsys.log')
-     if not os.path.exists(stats_file):
-         return results
+    stats_file = os.path.join(test_data_dir, 'battery.dumpsys.log')
+    if not os.path.exists(stats_file):
+        return results
 
-     with open(stats_file, 'r') as battery_file:
-         line = battery_file.read()
-         uid = re.search(r'[\s\w]+\(\d\)[\d\s]+top=([\w]+)\:"([\w\.]+)\"', line).group(1)
-         power_consumption = float(re.search(r'\s+Uid\s+' + uid + ': ([\w.]+)', line).group(1))
-         threshold = float(re.search(r'PowerUseThresholdMah : ([\d+\.]+) mah', line).group(1))
+    with open(stats_file, 'r') as battery_file:
+        line = battery_file.read()
+        uid = re.search(r'\(\d\)[\d\s]+[top+]+\=(\w+):"%s"' % get_package_name(test_data_dir), line).group(1)
+        power_consumption = float(re.search(r'\s+Uid\s+' + uid + ': ([\w.]+)', line).group(1))
+        threshold = float(re.search(r'PowerUseThresholdMah : ([\d+\.]+) mah', line).group(1))
 
-         measurements['Power Consumption (mAh)'] = power_consumption
-         if power_consumption > threshold:
-             failures.append('Exceeding power consumption. (threshold = %s)' % threshold)
+        measurements['Power Use (mAh)'] = power_consumption
+        if power_consumption > threshold:
+            failures.append('Exceeding power Use. (threshold = %s)' % threshold)
 
-     return results
+    return results
 
 def analyze_graphic_stats(test_data_dir):
     failures = []
@@ -242,9 +249,9 @@ def analyze_graphic_stats(test_data_dir):
         jank_percent = float(re.search(r'Janky frames: (\d+) \(([\d\.]+)%\)', line).group(2))
         threshold = float(re.search(r'JankPercentageThreshold : ([\d\.]+) %', line).group(1))
 
-        measurements['Jank Percentage (%)'] = jank_percent
+        measurements['Janky frames (%)'] = jank_percent
         if jank_percent > threshold:
-            failures.append('Jank percentage is too high. (threshold = %s)' % threshold)
+            failures.append('Janky frames is too high. (threshold = %s)' % threshold)
 
     return results
 
@@ -315,6 +322,11 @@ def analyze_data_files(dest_dir):
         print '\nOVERALL: FAILED. See above for more information.'
         return 1
 
+def show_console_stdout(folder_name, measurements):
+    print folder_name
+    print "\n".join(['%s : %s' % (k, v) for k, v in measurements.iteritems()])
+    print ''
+
 
 def xml(dest_dir,device_dir):
     xml_file_dir = os.path.join(dest_dir, 'app', 'build', 'outputs', 'androidTest-results', 'connected')
@@ -326,7 +338,7 @@ def xml(dest_dir,device_dir):
         name = element.get('name')
         classname = element.get('classname')
         folder_name = classname + '_' + name
-        test_data_dir = os.path.join(device_dir,'testdata', 'testdata', folder_name)
+        test_data_dir = os.path.join(device_dir, 'testdata', 'testdata', folder_name)
 
         # ([failure_messages], {measurement_name: measurement_value})
         failures = []
@@ -343,6 +355,8 @@ def xml(dest_dir,device_dir):
         _failures, _measurements = analyze_execution_time(test_data_dir)
         failures.extend(_failures)
         measurements.update(_measurements)
+
+        show_console_stdout(folder_name, measurements)
 
         ElementTree.SubElement(element, 'system-out').text = "\n".join(['<measurement><name>%s</name><value>%s</value></measurement>' % (k, v) for k, v in measurements.iteritems()])
         if failures:
@@ -426,9 +440,11 @@ def main():
 
     analyze_data_files(dest_dir)
 
-    # adding janky frames and execution time to the xml file
+
     dest_dir = sys.argv[1:][0] or '.'
     device_dir = os.path.join(dest_dir, "perftesting", device_id)
+
+    # adding test data to the xml file
     xml(dest_dir, device_dir)
 
 
