@@ -18,7 +18,6 @@ collecting batterystats, location request information, and a systrace.
 
 from __future__ import with_statement
 from xml.etree import ElementTree
-from xml.dom import minidom
 
 
 import os
@@ -28,7 +27,6 @@ import threading
 import time
 import re
 import sys
-import datetime
 
 
 # Imports the monkeyrunner modules used by this program.
@@ -36,11 +34,6 @@ import datetime
 
 # Percentage of janky frames to detect to warn.
 
-JANK_THRESHOLD = 60
-DUMPSYS_FILENAME = 'dumpsys.log'
-testcase_names = []
-list_for_jank_perc = []
-list_for_execution_time = []
 
 def perform_test(device, package_name):
     """Execution code for a test run thread."""
@@ -212,31 +205,75 @@ def run_tests_and_systrace(sdk_path, device, device_id, dest_dir,
     print ('Time between test and trace thread completion: ' +
            str(test_time_completion - trace_time_completion))
 
+def get_package_name(test_data_dir):
+    package_file = os.path.join(test_data_dir, 'package_name.log')
 
-def parse_dump_file(filename):
-    """Parse dump file data."""
-    with open(filename, 'r') as dump_file:
-        results = dict()
-        for line in dump_file:
-            test_name = re.search(r'TestName:([\w+\.]+)', line)
-            match = re.search(r'Janky frames: (\d+) \(([\d\.]+)%\)', line)
-            if test_name is not None:
-                results['Testname'] = str(test_name.group(1))
-            if match is not None:
-                results['jankNum'] = int(match.group(1))
-                results['jank_percent'] = float(match.group(2))
+    with open(package_file, 'r') as package_file:
+        line = package_file.read()
+        package_name = re.search(r'Package Name : ([\w.]+)', line).group(1)
+    return package_name
+
+
+def analyze_battery_stats(test_data_dir):
+     failures = []
+     measurements = {}
+     results = (failures, measurements)
+
+     stats_file = os.path.join(test_data_dir, 'battery.dumpsys.log')
+     if not os.path.exists(stats_file):
+         return results
+
+     with open(stats_file, 'r') as battery_file:
+         line = battery_file.read()
+         uid = re.search(r'\(\d\)[\d\s]+[top+]+\=(\w+):"%s"' % get_package_name(test_data_dir), line).group(1)
+         power_consumption = float(re.search(r'\s+Uid\s+' + uid + ': ([\w.]+)', line).group(1))
+         threshold = float(re.search(r'PowerUseThresholdMah : ([\d+\.]+) mah', line).group(1))
+
+         measurements['Power Use (mAh)'] = power_consumption
+         if power_consumption > threshold:
+             failures.append('Exceeding power Use. (threshold = %s)' % threshold)
+
+     return results
+
+def analyze_graphic_stats(test_data_dir):
+    failures = []
+    measurements = {}
+    results = (failures, measurements)
+
+    stats_file = os.path.join(test_data_dir, 'gfxinfo.dumpsys.log')
+    if not os.path.exists(stats_file):
         return results
 
+    with open(stats_file, 'r') as graphic_file:
+        line = graphic_file.read()
+        jank_percent = float(re.search(r'Janky frames: (\d+) \(([\d\.]+)%\)', line).group(2))
+        threshold = float(re.search(r'JankPercentageThreshold : ([\d\.]+) %', line).group(1))
 
-def parse_executiontime_file(filename):
-    with open(filename, 'r') as time_file:
-        results = dict()
-        for line in time_file:
-            match = re.search(r'Execution Time : ([\d+\.]+) ns', line)
-            if match is not None:
-                results['execution_time'] = (match.group(1))
-        return  results
+        measurements['Janky frames (%)'] = jank_percent
+        if jank_percent > threshold:
+            failures.append('Janky frames is too high. (threshold = %s)' % threshold)
 
+    return results
+
+def analyze_execution_time(test_data_dir):
+    failures = []
+    measurements = {}
+    results = (failures, measurements)
+
+    stats_file = os.path.join(test_data_dir, 'executiontime.log')
+    if not os.path.exists(stats_file):
+        return results
+
+    with open(stats_file, 'r') as time_file:
+        line = time_file.read()
+        execution_time = float(re.search(r'Execution Time : ([\d+\.]+) ms', line).group(1))
+        threshold = float(re.search(r'ThresholdMillis : ([\d+\.]+) ms', line).group(1))
+
+        measurements['Execution Time (ms)'] = execution_time
+        if execution_time > threshold:
+            failures.append('Taking too much time to response. (threshold = %s)' % threshold)
+
+    return results
 
 def analyze_data_files(dest_dir):
     """Analyze data files for issues that indicate a test failure."""
@@ -261,28 +298,7 @@ def analyze_data_files(dest_dir):
 
             for fname in file_list:
                 full_filename = os.path.join(dir_name, fname)
-                if fname == 'gfxinfo.dumpsys.log':
-                    # get the names of testcases
-                    get_testcase_name(dest_dir, full_filename)
-                    # process gfxinfo for janky frames
-                    dump_results = parse_dump_file(full_filename)
-                    jank_perc = dump_results['jank_percent']
-                    list_for_jank_perc.append(str(jank_perc))
-                    if jank_perc:
-
-                        if jank_perc > JANK_THRESHOLD:
-                            print ('FAIL: High level of janky frames ' +
-                                   'detected (' + str(jank_perc) + '%)' +
-                                   '. See trace.html for details.')
-                            passed = False
-                    else:
-                        print 'ERROR: No dump results could be found.'
-                        passed = False
-                if fname == 'executiontime.log':
-                    executiontime_results = parse_executiontime_file(full_filename)
-                    execution_time = executiontime_results['execution_time']
-                    list_for_execution_time.append(execution_time)
-                elif fname == 'test.failure.log':
+                if fname == 'test.failure.log':
                     # process test failure logs
                     print ('FAIL: Test failed. See ' + full_filename +
                            ' for details.')
@@ -293,7 +309,7 @@ def analyze_data_files(dest_dir):
             else:
                 overall_passed = False
 
-    test_complete_file = os.path.join(dest_dir, 'testdata',
+    test_complete_file = os.path.join(dest_dir, 'testdata', 'testdata',
                                       'testRunComplete.log')
     if not os.path.isfile(test_complete_file):
         overall_passed = False
@@ -306,25 +322,49 @@ def analyze_data_files(dest_dir):
         print '\nOVERALL: FAILED. See above for more information.'
         return 1
 
+def show_console_stdout(folder_name, measurements):
+    print folder_name
+    print "\n".join(['%s : %s' % (k, v) for k, v in measurements.iteritems()])
+    print ''
 
-def get_testcase_name(dest_dir, full_filename):
-    dump_results = parse_dump_file(full_filename)
-    testcase_name = dump_results['Testname']
-    testcase_names.append(testcase_name)
 
-
-def xml(dest_dir, jank_perc, execution_time):
-    xml_file_dir = os.path.join(dest_dir, 'app/build/outputs/androidTest-results/connected')
+def xml(dest_dir,device_dir):
+    xml_file_dir = os.path.join(dest_dir, 'app', 'build', 'outputs', 'androidTest-results', 'connected')
     for file in os.listdir(xml_file_dir):
         xml_file_name = file
-    tree = ElementTree.ElementTree(file = xml_file_dir + '/' + xml_file_name)
+    tree = ElementTree.ElementTree(file = os.path.join(xml_file_dir, xml_file_name))
+
     for element in tree.findall('testcase'):
         name = element.get('name')
-        for testcase_name, jank_perc, execution_time in zip(testcase_names,list_for_jank_perc,list_for_execution_time):
-            if name == testcase_name:
-                element.set('jank-percentage', jank_perc)
-                element.set('execution-time', execution_time)
+        classname = element.get('classname')
+        folder_name = classname + '_' + name
+        test_data_dir = os.path.join(device_dir, 'testdata', 'testdata', folder_name)
+
+        # ([failure_messages], {measurement_name: measurement_value})
+        failures = []
+        measurements = {}
+
+        _failures, _measurements = analyze_battery_stats(test_data_dir)
+        failures.extend(_failures)
+        measurements.update(_measurements)
+
+        _failures, _measurements = analyze_graphic_stats(test_data_dir)
+        failures.extend(_failures)
+        measurements.update(_measurements)
+
+        _failures, _measurements = analyze_execution_time(test_data_dir)
+        failures.extend(_failures)
+        measurements.update(_measurements)
+
+        show_console_stdout(folder_name, measurements)
+
+        ElementTree.SubElement(element, 'system-out').text = "\n".join(['<measurement><name>%s</name><value>%s</value></measurement>' % (k, v) for k, v in measurements.iteritems()])
+        if failures:
+            ElementTree.SubElement(element, 'failure').text = '\n'.join(failures)
+
     tree.write("results.xml")
+
+
 
 def main():
     """Run this script with
@@ -400,9 +440,12 @@ def main():
 
     analyze_data_files(dest_dir)
 
-    # adding janky frames and execution time to the xml file
+
     dest_dir = sys.argv[1:][0] or '.'
-    xml(dest_dir, list_for_jank_perc, list_for_execution_time)
+    device_dir = os.path.join(dest_dir, "perftesting", device_id)
+
+    # adding test data to the xml file
+    xml(dest_dir, device_dir)
 
 
 if __name__ == '__main__':
