@@ -52,8 +52,8 @@ public class MeasureExecutionTime extends ExternalResource {
         try {
             fileWriter = new FileWriter(getTestFile(mTestClass, mTestName, "executiontime" + ".log"));
             long output = endTime - startTime;
-            String strExecutionTime = String.valueOf("Execution Time : "+ (output/1000000f) + " ms\n");
-            String strExecutionThresholdMs = String.valueOf("ThresholdMillis : "+ thresholdMillis + " ms");
+            String strExecutionTime = "Execution Time : "+ (output/1000000f) + " ms\n";
+            String strExecutionThresholdMs = "ThresholdMillis : "+ thresholdMillis + " ms";
             fileWriter.append(strExecutionTime);
             fileWriter.append(strExecutionThresholdMs);
         } catch (Exception exception) {
