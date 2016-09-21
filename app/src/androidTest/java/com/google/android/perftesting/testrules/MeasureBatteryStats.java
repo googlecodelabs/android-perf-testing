@@ -89,7 +89,7 @@ public class MeasureBatteryStats extends ExternalResource {
                 builder.command("dumpsys", "batterystats", "--reset");
                 Process process = builder.start();
                 process.waitFor();
-                creatPackageNameFile();
+                createPackageNameFile();
             } catch (Exception exception) {
                 logger.log(Level.SEVERE, "Unable to reset dumpsys", exception);
             }
@@ -140,8 +140,7 @@ public class MeasureBatteryStats extends ExternalResource {
         }
     }
 
-    private void creatPackageNameFile() throws IOException, InterruptedException {
-        if (android.os.Build.VERSION.SDK_INT >= 23) {
+    private void createPackageNameFile() {
             try {
                 fileWriter = new FileWriter(getTestFile(mTestClass, mTestName, "package_name.log"));
                 String package_name = "Package Name : " + Config.TARGET_PACKAGE_NAME;
@@ -155,4 +154,4 @@ public class MeasureBatteryStats extends ExternalResource {
             }
         }
     }
-}
+

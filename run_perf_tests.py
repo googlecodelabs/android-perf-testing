@@ -225,8 +225,8 @@ def analyze_battery_stats(test_data_dir):
 
      with open(stats_file, 'r') as battery_file:
          line = battery_file.read()
-         uid = re.search(r'\(\d\)[\d\s]+[top+]+\=(\w+):"%s"' % get_package_name(test_data_dir), line).group(1)
-         power_consumption = float(re.search(r'\s+Uid\s+' + uid + ': ([\w.]+)', line).group(1))
+         uid = re.search(r'top=(\w+):"%s"' % get_package_name(test_data_dir), line).group(1)
+         power_consumption = float(re.search(r'Uid\s' + uid + ': ([\w.]+)', line).group(1))
          threshold = float(re.search(r'PowerUseThresholdMah : ([\d+\.]+) mah', line).group(1))
 
          measurements['Power Use (mAh)'] = power_consumption
