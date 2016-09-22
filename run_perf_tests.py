@@ -215,25 +215,25 @@ def get_package_name(test_data_dir):
 
 
 def analyze_battery_stats(test_data_dir):
-    failures = []
-    measurements = {}
-    results = (failures, measurements)
+     failures = []
+     measurements = {}
+     results = (failures, measurements)
 
-    stats_file = os.path.join(test_data_dir, 'battery.dumpsys.log')
-    if not os.path.exists(stats_file):
-        return results
+     stats_file = os.path.join(test_data_dir, 'battery.dumpsys.log')
+     if not os.path.exists(stats_file):
+         return results
 
-    with open(stats_file, 'r') as battery_file:
-        line = battery_file.read()
-        uid = re.search(r'\(\d\)[\d\s]+[top+]+\=(\w+):"%s"' % get_package_name(test_data_dir), line).group(1)
-        power_consumption = float(re.search(r'\s+Uid\s+' + uid + ': ([\w.]+)', line).group(1))
-        threshold = float(re.search(r'PowerUseThresholdMah : ([\d+\.]+) mah', line).group(1))
+     with open(stats_file, 'r') as battery_file:
+         line = battery_file.read()
+         uid = re.search(r'top=(\w+):"%s"' % get_package_name(test_data_dir), line).group(1)
+         power_consumption = float(re.search(r'Uid\s' + uid + ': ([\w.]+)', line).group(1))
+         threshold = float(re.search(r'PowerUseThresholdMah : ([\d+\.]+) mah', line).group(1))
 
-        measurements['Power Use (mAh)'] = power_consumption
-        if power_consumption > threshold:
-            failures.append('Exceeding power Use. (threshold = %s)' % threshold)
+         measurements['Battery (mAh)'] = power_consumption
+         if power_consumption > threshold:
+             failures.append('Exceeding power Use. (threshold = %s)' % threshold)
 
-    return results
+     return results
 
 def analyze_graphic_stats(test_data_dir):
     failures = []
@@ -249,7 +249,7 @@ def analyze_graphic_stats(test_data_dir):
         jank_percent = float(re.search(r'Janky frames: (\d+) \(([\d\.]+)%\)', line).group(2))
         threshold = float(re.search(r'JankPercentageThreshold : ([\d\.]+) %', line).group(1))
 
-        measurements['Janky frames (%)'] = jank_percent
+        measurements['UI Jank (%)'] = jank_percent
         if jank_percent > threshold:
             failures.append('Janky frames is too high. (threshold = %s)' % threshold)
 
@@ -269,7 +269,7 @@ def analyze_execution_time(test_data_dir):
         execution_time = float(re.search(r'Execution Time : ([\d+\.]+) ms', line).group(1))
         threshold = float(re.search(r'ThresholdMillis : ([\d+\.]+) ms', line).group(1))
 
-        measurements['Execution Time (ms)'] = execution_time
+        measurements['Exec Time (ms)'] = execution_time
         if execution_time > threshold:
             failures.append('Taking too much time to response. (threshold = %s)' % threshold)
 
@@ -321,12 +321,18 @@ def analyze_data_files(dest_dir):
     else:
         print '\nOVERALL: FAILED. See above for more information.'
         return 1
-
 def show_console_stdout(folder_name, measurements):
-    print folder_name
+    print 'Test name : ' + remove_common_string(folder_name)
     print "\n".join(['%s : %s' % (k, v) for k, v in measurements.iteritems()])
     print ''
 
+def remove_common_string(folder_name):
+    base = folder_name
+    base = base.replace("com.", "") \
+               .replace("google.", "") \
+               .replace("android.", "") \
+               .replace("perftesting.", "")
+    return base
 
 def xml(dest_dir,device_dir):
     xml_file_dir = os.path.join(dest_dir, 'app', 'build', 'outputs', 'androidTest-results', 'connected')
