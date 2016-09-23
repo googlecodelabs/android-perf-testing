@@ -18,6 +18,8 @@ package com.google.android.perftesting.testrules;
 
 import android.os.Trace;
 
+import com.google.android.perftesting.Config;
+
 import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -25,6 +27,7 @@ import org.junit.runners.model.Statement;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -50,6 +53,7 @@ public class MeasureBatteryStats extends ExternalResource {
     private String mTestClass;
     private double powerUseThresholdMah;
     private File mLogFileAbsoluteLocation = null;
+    private FileWriter fileWriter = null;
 
 
     public MeasureBatteryStats(double powerUseThresholdMah) {
@@ -85,7 +89,7 @@ public class MeasureBatteryStats extends ExternalResource {
                 builder.command("dumpsys", "batterystats", "--reset");
                 Process process = builder.start();
                 process.waitFor();
-
+                createPackageNameFile();
             } catch (Exception exception) {
                 logger.log(Level.SEVERE, "Unable to reset dumpsys", exception);
             }
@@ -135,4 +139,19 @@ public class MeasureBatteryStats extends ExternalResource {
             }
         }
     }
-}
+
+    private void createPackageNameFile() {
+            try {
+                fileWriter = new FileWriter(getTestFile(mTestClass, mTestName, "package_name.log"));
+                String package_name = "Package Name : " + Config.TARGET_PACKAGE_NAME;
+                fileWriter.append(package_name);
+            } catch (Exception exception) {
+                logger.log(Level.SEVERE, "Unable to create log file", exception);
+            } finally {
+                if (fileWriter != null) {
+                    try {fileWriter.close(); } catch (Exception e) { e.printStackTrace(); }
+                }
+            }
+        }
+    }
+
