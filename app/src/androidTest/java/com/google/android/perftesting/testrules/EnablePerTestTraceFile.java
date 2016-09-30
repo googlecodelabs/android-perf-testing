@@ -51,7 +51,7 @@ public class EnablePerTestTraceFile extends ExternalResource {
             ProcessBuilder builder = new ProcessBuilder();
             builder.command("atrace", "--async_start", "-a",
                     // NOTE: Using the android app BuildConfig specifically.
-                    Config.TARGET_PACKAGE_NAME);
+                    Config.getPKGName());
             Process process = builder.start();
             process.waitFor();
             if (process.exitValue() == 0) {
@@ -69,7 +69,7 @@ public class EnablePerTestTraceFile extends ExternalResource {
                 ProcessBuilder builder = new ProcessBuilder();
                 builder.command("atrace", "--async_stop", "-a",
                         // NOTE: Using the android app BuildConfig specifically.
-                        Config.TARGET_PACKAGE_NAME);
+                        Config.getPKGName());
                 Process process = builder.start();
                 process.waitFor();
             } catch (Exception ignored) {
