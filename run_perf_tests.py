@@ -229,7 +229,7 @@ def analyze_battery_stats(test_data_dir):
          power_consumption = float(re.search(r'Uid\s' + uid + ': ([\w.]+)', line).group(1))
          threshold = float(re.search(r'PowerUseThresholdMah : ([\d+\.]+) mah', line).group(1))
 
-         measurements['Power Use (mAh)'] = power_consumption
+         measurements['Battery (mAh)'] = power_consumption
          if power_consumption > threshold:
              failures.append('Exceeding power Use. (threshold = %s)' % threshold)
 
@@ -249,7 +249,7 @@ def analyze_graphic_stats(test_data_dir):
         jank_percent = float(re.search(r'Janky frames: (\d+) \(([\d\.]+)%\)', line).group(2))
         threshold = float(re.search(r'JankPercentageThreshold : ([\d\.]+) %', line).group(1))
 
-        measurements['Janky frames (%)'] = jank_percent
+        measurements['UI Jank (%)'] = jank_percent
         if jank_percent > threshold:
             failures.append('Janky frames is too high. (threshold = %s)' % threshold)
 
@@ -269,7 +269,7 @@ def analyze_execution_time(test_data_dir):
         execution_time = float(re.search(r'Execution Time : ([\d+\.]+) ms', line).group(1))
         threshold = float(re.search(r'ThresholdMillis : ([\d+\.]+) ms', line).group(1))
 
-        measurements['Execution Time (ms)'] = execution_time
+        measurements['Exec Time (ms)'] = execution_time
         if execution_time > threshold:
             failures.append('Taking too much time to response. (threshold = %s)' % threshold)
 
@@ -322,6 +322,19 @@ def analyze_data_files(dest_dir):
         print '\nOVERALL: FAILED. See above for more information.'
         return 1
 
+def show_console_stdout(folder_name, measurements):
+    print 'Test name : ' + remove_common_string(folder_name)
+    print "\n".join(['%s : %s' % (k, v) for k, v in measurements.iteritems()])
+    print ''
+
+def remove_common_string(folder_name):
+    base = folder_name
+    base = base.replace("com.", "") \
+               .replace("google.", "") \
+               .replace("android.", "") \
+               .replace("perftesting.", "")
+    return base
+
 def xml(dest_dir,device_dir):
     xml_file_dir = os.path.join(dest_dir, 'app', 'build', 'outputs', 'androidTest-results', 'connected')
     for file in os.listdir(xml_file_dir):
@@ -349,6 +362,8 @@ def xml(dest_dir,device_dir):
         _failures, _measurements = analyze_execution_time(test_data_dir)
         failures.extend(_failures)
         measurements.update(_measurements)
+
+        show_console_stdout(folder_name, measurements)
 
         ElementTree.SubElement(element, 'system-out').text = "\n".join(['<measurement><name>%s</name><value>%s</value></measurement>' % (k, v) for k, v in measurements.iteritems()])
         if failures:
