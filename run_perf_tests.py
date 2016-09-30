@@ -321,6 +321,7 @@ def analyze_data_files(dest_dir):
     else:
         print '\nOVERALL: FAILED. See above for more information.'
         return 1
+
 def show_console_stdout(folder_name, measurements):
     print 'Test name : ' + remove_common_string(folder_name)
     print "\n".join(['%s : %s' % (k, v) for k, v in measurements.iteritems()])
