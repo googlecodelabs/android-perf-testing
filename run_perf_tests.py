@@ -335,17 +335,19 @@ def remove_common_string(folder_name):
                .replace("perftesting.", "")
     return base
 
-def xml(dest_dir,device_dir):
+def xml(dest_dir, device_dir, device_id, device_model):
+    device_model = device_model.replace("_", " ")
     xml_file_dir = os.path.join(dest_dir, 'app', 'build', 'outputs', 'androidTest-results', 'connected')
     for file in os.listdir(xml_file_dir):
-        xml_file_name = file
+        if re.search(device_model, file):
+            xml_file_name = file
     tree = ElementTree.ElementTree(file = os.path.join(xml_file_dir, xml_file_name))
 
     for element in tree.findall('testcase'):
         name = element.get('name')
         classname = element.get('classname')
         folder_name = classname + '_' + name
-        test_data_dir = os.path.join(device_dir, 'testdata', 'testdata', folder_name)
+        test_data_dir = os.path.join(device_dir,'testdata', 'testdata', folder_name)
 
         # ([failure_messages], {measurement_name: measurement_value})
         failures = []
@@ -369,7 +371,8 @@ def xml(dest_dir,device_dir):
         if failures:
             ElementTree.SubElement(element, 'failure').text = '\n'.join(failures)
 
-    tree.write("results.xml")
+    tree.write(device_id + ".xml")
+
 
 
 
@@ -384,6 +387,8 @@ def main():
     device_id = sys.argv[1:][1] or null
     print 'Using device_id: ' + device_id
 
+    device_model = sys.argv[1:][2] or null
+    print 'Using device_model: ' + device_model
 
     # Organize test output by device in case multiple devices are being tested.
     dest_dir = os.path.join(dest_dir, "perftesting", device_id)
@@ -447,12 +452,10 @@ def main():
 
     analyze_data_files(dest_dir)
 
-
+    # adding janky frames and execution time to the xml file
     dest_dir = sys.argv[1:][0] or '.'
     device_dir = os.path.join(dest_dir, "perftesting", device_id)
-
-    # adding test data to the xml file
-    xml(dest_dir, device_dir)
+    xml(dest_dir, device_dir, device_id, device_model)
 
 
 if __name__ == '__main__':

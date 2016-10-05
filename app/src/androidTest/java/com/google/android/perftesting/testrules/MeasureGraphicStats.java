@@ -80,7 +80,7 @@ public class MeasureGraphicStats extends ExternalResource {
             ProcessBuilder builder = new ProcessBuilder();
             builder.command("dumpsys", "gfxinfo", "--reset",
                     // NOTE: Using the android app BuildConfig specifically.
-                    Config.TARGET_PACKAGE_NAME);
+                    Config.getPKGName());
             Process process = builder.start();
             process.waitFor();
         } catch (Exception exception) {
@@ -98,7 +98,7 @@ public class MeasureGraphicStats extends ExternalResource {
                 // TODO: If less than API level 23 we should remove framestats.
                 processBuilder.command("dumpsys", "gfxinfo",
                         // NOTE: Using the android app BuildConfig specifically.
-                        Config.TARGET_PACKAGE_NAME,
+                        Config.getPKGName(),
                         "framestats");
                 processBuilder.redirectErrorStream();
                 Process process = processBuilder.start();

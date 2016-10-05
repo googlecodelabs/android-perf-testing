@@ -25,6 +25,7 @@ import android.support.test.uiautomator.By;
 import android.support.test.uiautomator.UiDevice;
 import android.support.test.uiautomator.Until;
 
+import com.google.android.perftesting.common.PerfTest;
 import com.google.android.perftesting.testrules.EnableLogcatDump;
 import com.google.android.perftesting.testrules.EnableNetStatsDump;
 import com.google.android.perftesting.testrules.EnableTestTracing;
@@ -36,6 +37,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -46,7 +48,12 @@ import org.junit.runner.RunWith;
 @SdkSuppress(minSdkVersion = 18)
 //@PerfTest
 public class PerfTestTemplate {
+
     private static final int LAUNCH_TIMEOUT = 5000;
+
+    //If you want to change the application in this test suite, fill up the application's packagename
+    @ClassRule
+    public static Config mConfig = new Config();
 
     public EnableTestTracing mEnableTestTracing = new EnableTestTracing();
 
@@ -71,18 +78,7 @@ public class PerfTestTemplate {
 
     @BeforeClass
     public static void setupClass() {
-         // Open the app
-        Context context = InstrumentationRegistry.getContext();
-        final Intent intent = context.getPackageManager()
-                .getLaunchIntentForPackage(Config.TARGET_PACKAGE_NAME);
-
-         // Clear out any previous instances
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        context.startActivity(intent);
-
-        // Wait for the view to appear
-        UiDevice device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
-        device.wait(Until.hasObject(By.pkg(Config.TARGET_PACKAGE_NAME).depth(0)), LAUNCH_TIMEOUT);
+        Config.launch(LAUNCH_TIMEOUT);
     }
 
     @Before

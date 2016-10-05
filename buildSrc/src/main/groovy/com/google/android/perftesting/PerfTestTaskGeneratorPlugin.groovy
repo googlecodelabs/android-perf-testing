@@ -1,5 +1,6 @@
 package com.google.android.perftesting
 
+import jdk.internal.org.objectweb.asm.tree.analysis.Value
 import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -39,8 +40,7 @@ public class PerfTestTaskGeneratorPlugin implements Plugin<Project> {
 
     private void createLocalPerfTestTasks(Project project) {
         ArrayList<Task> createdTasks = new ArrayList<Task>()
-        List<String> connectedDevices = getConnectedDeviceList(project)
-
+        Map<String, String> connectedDeviceDict = getConnectedDeviceDict(project)
         // Tasks the performance test tasks are dependent on.
         HashSet<String> dependentTasks = new HashSet<String>();
         // Retrieve install tasks that need to run before the performance test tasks run.
@@ -64,11 +64,13 @@ public class PerfTestTaskGeneratorPlugin implements Plugin<Project> {
                 description: 'Run performance tests on all connected devices.')
 
         // Create a perf test task for each connected device.
-        connectedDevices.each { androidDeviceId ->
+        connectedDeviceDict.each {androidDeviceModel, androidDeviceId ->
             RunLocalPerfTestsTask newTask = (RunLocalPerfTestsTask) project.tasks.create(
                     name: ('runLocalPerfTests_' + androidDeviceId),
                     type: RunLocalPerfTestsTask)
             newTask.deviceId = androidDeviceId
+            newTask.deviceModel = androidDeviceModel
+
             // Ensure each device-specific task is run by the parent perf test task.
             runLocalPerfTests.dependsOn(newTask)
 
@@ -88,7 +90,7 @@ public class PerfTestTaskGeneratorPlugin implements Plugin<Project> {
         }
     }
 
-    private List<String> getConnectedDeviceList(Project project) {
+    private Map<String, String> getConnectedDeviceDict(Project project) {
         def rootDir = project.rootDir
 
         def localProperties = new File(rootDir, "local.properties")
@@ -106,7 +108,7 @@ public class PerfTestTaskGeneratorPlugin implements Plugin<Project> {
         String adbCommand = sdkDir + File.separator + "platform-tools" + File.separator + "adb"
         logger.info("Using ADB command: ${adbCommand}")
         // Compose a list of connected Android devices.
-        ArrayList<String> devices = new ArrayList<String>()
+        Map<String, String> devices = new HashMap<String, String>()
         ProcessBuilder processBuilder = new ProcessBuilder()
         processBuilder.command(adbCommand, "devices", "-l")
         Process process = processBuilder.start()
@@ -121,15 +123,15 @@ public class PerfTestTaskGeneratorPlugin implements Plugin<Project> {
                     // Use regex named groups to check if devices are connected.
                     // "adb devices -l" to view detail of connected device : <deviceID> device (usb) product model device,
                     // if use TCPIP to connect debug, you won't see the usb item.
-                    // 
+                    //
                     // List of devices attached
                     // CA7B49C0GF             device usb:352795843X product:E6553 model:E6553 device:E6553
                     // 192.168.12.34:5555     device product:E6653 model:E6653 device:E6653
-                    Pattern pattern = Pattern.compile("^(?<deviceID>[\\w\\.:]+)\\s+device\\s+(usb:\\w+\\s+)?product:\\w+\\s+model:\\w+\\s+device:\\w+");
+                    Pattern pattern = Pattern.compile("^(?<deviceID>[\\w\\.:]+)\\s+device\\s+(usb:\\w+\\s+)?product:\\w+\\s+model:(?<deviceModel>\\w+)\\s+device:\\w+");
                     while ((outputLine = bufferedReader.readLine()) != null) {
                         Matcher matcher = pattern.matcher(outputLine);
                         if (matcher.matches()) {
-                            devices.add(matcher.group("deviceID"));
+                            devices.put(matcher.group("deviceModel"), matcher.group("deviceID"));
                         }
                     }
                 }
