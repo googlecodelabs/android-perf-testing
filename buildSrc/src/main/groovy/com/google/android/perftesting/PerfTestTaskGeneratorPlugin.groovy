@@ -127,7 +127,7 @@ public class PerfTestTaskGeneratorPlugin implements Plugin<Project> {
                     // List of devices attached
                     // CA7B49C0GF             device usb:352795843X product:E6553 model:E6553 device:E6553
                     // 192.168.12.34:5555     device product:E6653 model:E6653 device:E6653
-                    Pattern pattern = Pattern.compile("^(?<deviceID>[\\w\\.:]+)\\s+device\\s+(usb:\\w+\\s+)?product:\\w+\\s+model:(?<deviceModel>\\w+)\\s+device:\\w+");
+                    Pattern pattern = Pattern.compile("^(?<deviceID>[\\w\\.:-]+)\\s+device\\s+(usb:\\w+(-\\w+(.\\w+)?)?\\s+)?product:\\w+\\s+model:(?<deviceModel>\\w+)\\s+device:\\w+");
                     while ((outputLine = bufferedReader.readLine()) != null) {
                         Matcher matcher = pattern.matcher(outputLine);
                         if (matcher.matches()) {
