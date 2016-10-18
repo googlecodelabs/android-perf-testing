@@ -349,8 +349,10 @@ def find_emulaor_name(device_id):
         return " "
 
     #get the android virtual device name
-    telnet_connect.write("avd name\n")
-    telnet_connect.write("exit\n")
+    telnet_connect.read_until("\n")
+    telnet_connect.write("avd name\n".encode('ascii'))
+    telnet_connect.read_until("\n")
+    telnet_connect.write("exit\n".encode('ascii'))
     connect_output = telnet_connect.read_all().split('\n')
     for index, str in enumerate(connect_output):
         if (str.find("avd name") != -1):
