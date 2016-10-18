@@ -27,7 +27,8 @@ import threading
 import time
 import re
 import sys
-
+import telnetlib
+from os.path import basename
 
 # Imports the monkeyrunner modules used by this program.
 # from com.android.monkeyrunner import MonkeyRunner, MonkeyDevice # pylint: disable=import-error,unused-import
@@ -35,14 +36,17 @@ import sys
 # Percentage of janky frames to detect to warn.
 
 
-def perform_test(device, package_name):
+def perform_test(device, package_name, device_id):
     """Execution code for a test run thread."""
 
     print 'Starting test'
 
+    env = os.environ.copy()
+    env['ANDROID_SERIAL'] = device_id
+
     # Run the test and print the timing result.
     cmd = "./gradlew connectedDebugAndroidTest"
-    subprocess.call(cmd, shell=True)
+    subprocess.Popen(cmd, shell=True, env=env).wait()
 
     print 'Done running tests'
 
@@ -59,8 +63,8 @@ def perform_systrace(sdk_path, device_id, dest_dir, package_name):
                         '--time=20',
                         '-o', os.path.join(dest_dir, 'trace.html'),
                         'gfx', 'input', 'view', 'wm', 'am', 'sm', 'hal',
-                        'app', 'res', 'dalvik', 'power', 'freq', 'freq',
-                        'idle', 'load']
+                        'app', 'res', 'dalvik', 'power', 'freq',
+                        'idle']
     print 'Executing systrace'
     systrace_log_path = os.path.join(dest_dir, 'logs', 'capture_systrace.log')
     with open(systrace_log_path, 'w') as systrace_log:
@@ -189,21 +193,21 @@ def run_tests_and_systrace(sdk_path, device, device_id, dest_dir,
     test_thread = threading.Thread(name='TestThread',
                                    target=perform_test,
                                    args=(device,
-                                         package_name))
+                                         package_name,
+                                         device_id))
     systrace_thread.start()
     test_thread.start()
-
     # Join the parallel thread processing to continue when both complete.
     systrace_thread.join()
     test_thread.join()
     trace_time_completion = int(time.time())
     print 'Systrace Thread Done'
-
     test_thread.join()
     test_time_completion = int(time.time())
     print 'Test Thread Done'
     print ('Time between test and trace thread completion: ' +
            str(test_time_completion - trace_time_completion))
+
 
 def get_package_name(test_data_dir):
     package_file = os.path.join(test_data_dir, 'package_name.log')
@@ -335,11 +339,27 @@ def remove_common_string(folder_name):
                .replace("perftesting.", "")
     return base
 
-def xml(dest_dir, device_dir, device_id, device_model):
-    device_model = device_model.replace("_", " ")
+def find_emulaor_name(device_id):
+    #get the port of emulator
+    emulator_port = device_id.split("-")
+    try:
+        # hostname must 'localhost'
+        telnet_connect = telnetlib.Telnet("localhost", emulator_port[1])
+    except:
+        return " "
+
+    #get the android virtual device name
+    telnet_connect.write("avd name\n")
+    telnet_connect.write("exit\n")
+    connect_output = telnet_connect.read_all().split('\n')
+    for index, str in enumerate(connect_output):
+        if (str.find("avd name") != -1):
+            emulator_name = connect_output[index+1]
+    return emulator_name.strip()
+
+def xml(dest_dir, device_dir, device_id, device_model, emulator_name):
     xml_file_dir = os.path.join(dest_dir, 'app', 'build', 'outputs', 'androidTest-results', 'connected')
     for file in os.listdir(xml_file_dir):
-        if re.search(device_model, file):
             xml_file_name = file
     tree = ElementTree.ElementTree(file = os.path.join(xml_file_dir, xml_file_name))
 
@@ -371,10 +391,10 @@ def xml(dest_dir, device_dir, device_id, device_model):
         if failures:
             ElementTree.SubElement(element, 'failure').text = '\n'.join(failures)
 
-    tree.write(device_id + ".xml")
-
-
-
+    if emulator_name.isspace():
+        tree.write(device_model + ".xml")
+    else:
+        tree.write(emulator_name + ".xml")
 
 def main():
     """Run this script with
@@ -455,7 +475,10 @@ def main():
     # adding janky frames and execution time to the xml file
     dest_dir = sys.argv[1:][0] or '.'
     device_dir = os.path.join(dest_dir, "perftesting", device_id)
-    xml(dest_dir, device_dir, device_id, device_model)
+
+    emulator_name = find_emulaor_name(device_id)
+
+    xml(dest_dir, device_dir, device_id, device_model, emulator_name)
 
 
 if __name__ == '__main__':
