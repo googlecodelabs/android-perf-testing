@@ -18,6 +18,7 @@ package com.google.android.perftesting;
 
 import android.content.Context;
 import android.content.Intent;
+import android.os.RemoteException;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.filters.SdkSuppress;
 import android.support.test.runner.AndroidJUnit4;
@@ -53,7 +54,7 @@ public class PerfTestTemplate {
 
     //If you want to change the application in this test suite, fill up the application's packagename
     @ClassRule
-    public static Config mConfig = new Config();
+    public static Config config = new Config();
 
     public EnableTestTracing mEnableTestTracing = new EnableTestTracing();
 
@@ -78,7 +79,8 @@ public class PerfTestTemplate {
 
     @BeforeClass
     public static void setupClass() {
-        Config.launch(LAUNCH_TIMEOUT);
+        // Open the app
+        config.launch(LAUNCH_TIMEOUT);
     }
 
     @Before
@@ -97,8 +99,9 @@ public class PerfTestTemplate {
     }
 
     @AfterClass
-    public static void teardownClass() {
+    public static void teardownClass() throws RemoteException {
         //Close the app
+        config.close(LAUNCH_TIMEOUT);
     }
 
 }
