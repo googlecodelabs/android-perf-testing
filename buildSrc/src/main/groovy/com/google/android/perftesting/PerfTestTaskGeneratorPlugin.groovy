@@ -120,14 +120,18 @@ public class PerfTestTaskGeneratorPlugin implements Plugin<Project> {
             process.inputStream.withReader { processOutputReader ->
                 new BufferedReader(processOutputReader).with { bufferedReader ->
                     String outputLine;
-                    // Use regex named groups to check if devices are connected.
+                    // Use regex named groups to check if devices are connected on OSX, Windows, Linux and AVD.
                     // "adb devices -l" to view detail of connected device : <deviceID> device (usb) product model device,
                     // if use TCPIP to connect debug, you won't see the usb item.
                     //
                     // List of devices attached
                     // CA7B49C0GF             device usb:352795843X product:E6553 model:E6553 device:E6553
                     // 192.168.12.34:5555     device product:E6653 model:E6653 device:E6653
-                    Pattern pattern = Pattern.compile("^(?<deviceID>[\\w\\.:]+)\\s+device\\s+(usb:\\w+\\s+)?product:\\w+\\s+model:(?<deviceModel>\\w+)\\s+device:\\w+");
+                    // emulator-5554          device product:sdk_google_phone_x86 model:Android_SDK_built_for_x86 device:generic_x86
+                    // 4d00806e52fd8053       device usb:1-1.1 product:ha3gzs model:SM_N900 device:ha3g
+                    // HT5ASBE04307           device usb:5-1 product:hiaeuhl_00709 model:HTC_A9u device:htc_hiaeuhl
+
+                    Pattern pattern = Pattern.compile("^(?<deviceID>[\\w\\.:-]+)\\s+device\\s+(usb:\\w+(-\\w+(.\\w+)?)?\\s+)?product:\\w+\\s+model:(?<deviceModel>\\w+)\\s+device:\\w+");
                     while ((outputLine = bufferedReader.readLine()) != null) {
                         Matcher matcher = pattern.matcher(outputLine);
                         if (matcher.matches()) {
