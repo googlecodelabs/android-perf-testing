@@ -23,9 +23,10 @@ public class MeasureExecutionTime extends ExternalResource {
     private Logger logger = Logger.getLogger(MeasureBatteryStats.class.getName());
     private String mTestName;
     private String mTestClass;
-    private long startTime;
+    private Long startTime;
     private Long endTime;
     private long thresholdMillis;
+    private boolean flag = false;
 
     @Override
     public Statement apply(Statement base, Description description) {
@@ -42,7 +43,8 @@ public class MeasureExecutionTime extends ExternalResource {
     public void before() { begin(); }
 
     public void after() {
-        if (endTime == null){
+        if (flag == false)
+        {
             endTime = System.nanoTime();
         }
 
@@ -74,10 +76,12 @@ public class MeasureExecutionTime extends ExternalResource {
     }
 
     public void begin() {
-        startTime = System.nanoTime();
+        if(startTime == null )
+            startTime = System.nanoTime();
     }
 
     public void end() {
+        flag = !flag;
         endTime = System.nanoTime();
     }
 
