@@ -50,6 +50,8 @@ public class EnableNetStatsDump extends ExternalResource {
 
     private File mLogFileAbsoluteLocation = null;
 
+//    private static final String LOG_TAG = "EnableNetStatsDump";
+
     public EnableNetStatsDump() {
 
     }
@@ -66,6 +68,7 @@ public class EnableNetStatsDump extends ExternalResource {
         mTestName = description.getMethodName();
         mTestClass = description.getClassName();
         return super.apply(base, description);
+
     }
 
     @Override

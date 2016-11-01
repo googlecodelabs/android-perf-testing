@@ -1,10 +1,14 @@
 package com.google.android.perftesting
 
+import jdk.internal.org.objectweb.asm.tree.analysis.Value
 import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.logging.Logger
+
+import java.util.regex.Matcher
+import java.util.regex.Pattern
 
 /**
  * Gradle Plugin automating the creation of performance testing tasks for each device currently
@@ -36,8 +40,7 @@ public class PerfTestTaskGeneratorPlugin implements Plugin<Project> {
 
     private void createLocalPerfTestTasks(Project project) {
         ArrayList<Task> createdTasks = new ArrayList<Task>()
-        List<String> connectedDevices = getConnectedDeviceList(project)
-
+        Map<String, String> connectedDeviceDict = getConnectedDeviceDict(project)
         // Tasks the performance test tasks are dependent on.
         HashSet<String> dependentTasks = new HashSet<String>();
         // Retrieve install tasks that need to run before the performance test tasks run.
@@ -61,11 +64,13 @@ public class PerfTestTaskGeneratorPlugin implements Plugin<Project> {
                 description: 'Run performance tests on all connected devices.')
 
         // Create a perf test task for each connected device.
-        connectedDevices.each { androidDeviceId ->
+        connectedDeviceDict.each {androidDeviceModel, androidDeviceId ->
             RunLocalPerfTestsTask newTask = (RunLocalPerfTestsTask) project.tasks.create(
                     name: ('runLocalPerfTests_' + androidDeviceId),
                     type: RunLocalPerfTestsTask)
             newTask.deviceId = androidDeviceId
+            newTask.deviceModel = androidDeviceModel
+
             // Ensure each device-specific task is run by the parent perf test task.
             runLocalPerfTests.dependsOn(newTask)
 
@@ -85,8 +90,9 @@ public class PerfTestTaskGeneratorPlugin implements Plugin<Project> {
         }
     }
 
-    private List<String> getConnectedDeviceList(Project project) {
+    private Map<String, String> getConnectedDeviceDict(Project project) {
         def rootDir = project.rootDir
+
         def localProperties = new File(rootDir, "local.properties")
         def sdkDir = ""
         if (localProperties.exists()) {
@@ -95,11 +101,14 @@ public class PerfTestTaskGeneratorPlugin implements Plugin<Project> {
                 properties.load(instr)
             }
             sdkDir = properties.getProperty('sdk.dir')
+        } else {
+            sdkDir = System.getenv("ANDROID_HOME")
         }
+
         String adbCommand = sdkDir + File.separator + "platform-tools" + File.separator + "adb"
         logger.info("Using ADB command: ${adbCommand}")
         // Compose a list of connected Android devices.
-        ArrayList<String> devices = new ArrayList<String>()
+        Map<String, String> devices = new HashMap<String, String>()
         ProcessBuilder processBuilder = new ProcessBuilder()
         processBuilder.command(adbCommand, "devices", "-l")
         Process process = processBuilder.start()
@@ -111,19 +120,22 @@ public class PerfTestTaskGeneratorPlugin implements Plugin<Project> {
             process.inputStream.withReader { processOutputReader ->
                 new BufferedReader(processOutputReader).with { bufferedReader ->
                     String outputLine;
+                    // Use regex named groups to check if devices are connected on OSX, Windows, Linux and AVD.
+                    // "adb devices -l" to view detail of connected device : <deviceID> device (usb) product model device,
+                    // if use TCPIP to connect debug, you won't see the usb item.
+                    //
+                    // List of devices attached
+                    // CA7B49C0GF             device usb:352795843X product:E6553 model:E6553 device:E6553
+                    // 192.168.12.34:5555     device product:E6653 model:E6653 device:E6653
+                    // emulator-5554          device product:sdk_google_phone_x86 model:Android_SDK_built_for_x86 device:generic_x86
+                    // 4d00806e52fd8053       device usb:1-1.1 product:ha3gzs model:SM_N900 device:ha3g
+                    // HT5ASBE04307           device usb:5-1 product:hiaeuhl_00709 model:HTC_A9u device:htc_hiaeuhl
+
+                    Pattern pattern = Pattern.compile("^(?<deviceID>[\\w\\.:-]+)\\s+device\\s+(usb:\\w+(-\\w+(.\\w+)?)?\\s+)?product:\\w+\\s+model:(?<deviceModel>\\w+)\\s+device:\\w+");
                     while ((outputLine = bufferedReader.readLine()) != null) {
-                        outputLine = outputLine.trim()
-                        if (!outputLine.startsWith("List of devices attached") && !"".equals(outputLine)) {
-                            String[] lineParts = outputLine.split(/\s+/) // The regex groups whitespace.
-                            if (lineParts.length != 6) {
-                                // "adb devices -l" isn't a formal API so we'll add a sanity check. If
-                                // the 'spec' changes this should point us right to the issue.
-                                throw new Exception("There should always be 6 parts to the output, " +
-                                        "double check something isn't wrong: ${outputLine} parsed to " +
-                                        "${lineParts}")
-                            } else {
-                                devices.add(lineParts[0])
-                            }
+                        Matcher matcher = pattern.matcher(outputLine);
+                        if (matcher.matches()) {
+                            devices.put(matcher.group("deviceModel"), matcher.group("deviceID"));
                         }
                     }
                 }

@@ -18,6 +18,8 @@ package com.google.android.perftesting.testrules;
 
 import android.os.Trace;
 
+import com.google.android.perftesting.Config;
+
 import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -25,6 +27,7 @@ import org.junit.runners.model.Statement;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -40,26 +43,21 @@ import static com.google.android.perftesting.common.PerfTestingUtils.getTestFile
  *
  * <pre>
  * @Rule
- * public EnableBatteryStatsDump mEnableBatteryStatsDump = new EnableBatteryStatsDump();
+ * public MeasureBatteryStats mMeasureBatteryStats = new MeasureBatteryStats();
  * </pre>
  */
-public class EnableBatteryStatsDump extends ExternalResource {
+public class MeasureBatteryStats extends ExternalResource {
 
-    private Logger logger = Logger.getLogger(EnableBatteryStatsDump.class.getName());
-
+    private Logger logger = Logger.getLogger(MeasureBatteryStats.class.getName());
     private String mTestName;
-
     private String mTestClass;
-
+    private double powerUseThresholdMah;
     private File mLogFileAbsoluteLocation = null;
+    private FileWriter fileWriter = null;
 
-    public EnableBatteryStatsDump() { }
 
-    /**
-     * Allow the the log to be written to a specific location.
-     */
-    public EnableBatteryStatsDump(File logFileAbsoluteLocation) {
-        mLogFileAbsoluteLocation = logFileAbsoluteLocation;
+    public MeasureBatteryStats(double powerUseThresholdMah) {
+        this.powerUseThresholdMah = powerUseThresholdMah;
     }
 
     @Override
@@ -71,19 +69,34 @@ public class EnableBatteryStatsDump extends ExternalResource {
 
     @Override
     public void before() {
+        begin();
+    }
+
+    public void after() {
+        if (mLogFileAbsoluteLocation == null) {
+            end();
+        }
+    }
+
+    public void setpowerUseThresholdMah(double powerUseThresholdMah) {
+        this.powerUseThresholdMah = powerUseThresholdMah;
+    }
+
+    public void begin(){
         if (android.os.Build.VERSION.SDK_INT >= 21) {
             try {
                 ProcessBuilder builder = new ProcessBuilder();
                 builder.command("dumpsys", "batterystats", "--reset");
                 Process process = builder.start();
                 process.waitFor();
+                createPackageNameFile();
             } catch (Exception exception) {
                 logger.log(Level.SEVERE, "Unable to reset dumpsys", exception);
             }
         }
     }
 
-    public void after() {
+    public void end(){
         if (android.os.Build.VERSION.SDK_INT >= 21) {
             FileWriter fileWriter = null;
             BufferedReader bufferedReader = null;
@@ -94,6 +107,7 @@ public class EnableBatteryStatsDump extends ExternalResource {
                 processBuilder.command("dumpsys", "batterystats");
                 processBuilder.redirectErrorStream();
                 Process process = processBuilder.start();
+
                 if (mLogFileAbsoluteLocation == null) {
                     mLogFileAbsoluteLocation = getTestFile(mTestClass, mTestName,
                             "battery.dumpsys.log");
@@ -102,6 +116,8 @@ public class EnableBatteryStatsDump extends ExternalResource {
                 bufferedReader = new BufferedReader(
                         new InputStreamReader(process.getInputStream()));
                 String line;
+                String strPowerUseThresholdMah = "PowerUseThresholdMah : " + powerUseThresholdMah + " mah";
+                fileWriter.append(strPowerUseThresholdMah + "\n");
                 while ((line = bufferedReader.readLine()) != null) {
                     fileWriter.append(line);
                     fileWriter.append(System.lineSeparator());
@@ -123,4 +139,19 @@ public class EnableBatteryStatsDump extends ExternalResource {
             }
         }
     }
-}
+
+    private void createPackageNameFile() {
+            try {
+                fileWriter = new FileWriter(getTestFile(mTestClass, mTestName, "package_name.log"));
+                String package_name = "Package Name : " + Config.TARGET_PACKAGE_NAME;
+                fileWriter.append(package_name);
+            } catch (Exception exception) {
+                logger.log(Level.SEVERE, "Unable to create log file", exception);
+            } finally {
+                if (fileWriter != null) {
+                    try {fileWriter.close(); } catch (Exception e) { e.printStackTrace(); }
+                }
+            }
+        }
+    }
+

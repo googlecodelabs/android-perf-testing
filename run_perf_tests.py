@@ -17,6 +17,8 @@ collecting batterystats, location request information, and a systrace.
 """
 
 from __future__ import with_statement
+from xml.etree import ElementTree
+
 
 import os
 import shutil
@@ -25,30 +27,27 @@ import threading
 import time
 import re
 import sys
+import telnetlib
+from os.path import basename
 
 # Imports the monkeyrunner modules used by this program.
-from com.android.monkeyrunner import MonkeyRunner, MonkeyDevice # pylint: disable=import-error,unused-import
+# from com.android.monkeyrunner import MonkeyRunner, MonkeyDevice # pylint: disable=import-error,unused-import
 
 # Percentage of janky frames to detect to warn.
-JANK_THRESHOLD = 60
-DUMPSYS_FILENAME = 'dumpsys.log'
 
-def perform_test(device, package_name):
+
+def perform_test(device, package_name, device_id):
     """Execution code for a test run thread."""
 
     print 'Starting test'
 
-    params = dict({
-        'listener': 'com.google.android.perftesting.TestListener',
-        'annotation': 'com.google.android.perftesting.common.PerfTest',
-        'disableAnalytics': 'true'
-    })
-
-    test_runner = (package_name + '.test' +
-                   '/android.support.test.runner.AndroidJUnitRunner')
+    env = os.environ.copy()
+    env['ANDROID_SERIAL'] = device_id
 
     # Run the test and print the timing result.
-    print device.instrument(test_runner, params)['stream']
+    cmd = "./gradlew connectedDebugAndroidTest"
+    subprocess.Popen(cmd, shell=True, env=env).wait()
+
     print 'Done running tests'
 
 
@@ -64,8 +63,8 @@ def perform_systrace(sdk_path, device_id, dest_dir, package_name):
                         '--time=20',
                         '-o', os.path.join(dest_dir, 'trace.html'),
                         'gfx', 'input', 'view', 'wm', 'am', 'sm', 'hal',
-                        'app', 'res', 'dalvik', 'power', 'freq', 'freq',
-                        'idle', 'load']
+                        'app', 'res', 'dalvik', 'power', 'freq',
+                        'idle']
     print 'Executing systrace'
     systrace_log_path = os.path.join(dest_dir, 'logs', 'capture_systrace.log')
     with open(systrace_log_path, 'w') as systrace_log:
@@ -157,8 +156,8 @@ def pull_device_data_files(sdk_path, device_id, source_dir, dest_dir, package_na
     """Extrace test files from a device after a test run."""
 
     print 'Starting adb pull for test files'
-    test_data_location = (source_dir + package_name +
-                          '/files/testdata')
+    test_data_location = (source_dir +
+                          'testdata')
     pull_test_data_command = [os.path.join(sdk_path, 'platform-tools',
                                            'adb'),
                               '-s', device_id, 'pull', test_data_location,
@@ -174,17 +173,11 @@ def pull_device_data_files(sdk_path, device_id, source_dir, dest_dir, package_na
             print 'ERROR extracting test files.'
 
 
-def open_app(device, package_name):
-    """Open the specified app on the device."""
-
-    device.shell('am start -n ' + package_name + '/' + package_name +
-                 '.MainActivity')
-
-
 def reset_graphics_dumpsys(device, package_name):
     """Reset all existing data in graphics buffer."""
     print 'Clearing gfxinfo on device'
-    device.shell('dumpsys gfxinfo ' + package_name + ' reset')
+    #device.shell('dumpsys gfxinfo ' + package_name + ' reset')
+    subprocess.call('adb shell dumpsys gfxinfo ' + package_name + ' reset', shell=True)
 
 
 def run_tests_and_systrace(sdk_path, device, device_id, dest_dir,
@@ -200,15 +193,15 @@ def run_tests_and_systrace(sdk_path, device, device_id, dest_dir,
     test_thread = threading.Thread(name='TestThread',
                                    target=perform_test,
                                    args=(device,
-                                         package_name))
+                                         package_name,
+                                         device_id))
     systrace_thread.start()
     test_thread.start()
-
     # Join the parallel thread processing to continue when both complete.
     systrace_thread.join()
+    test_thread.join()
     trace_time_completion = int(time.time())
     print 'Systrace Thread Done'
-
     test_thread.join()
     test_time_completion = int(time.time())
     print 'Test Thread Done'
@@ -216,17 +209,75 @@ def run_tests_and_systrace(sdk_path, device, device_id, dest_dir,
            str(test_time_completion - trace_time_completion))
 
 
-def parse_dump_file(filename):
-    """Parse dump file data."""
-    with open(filename, 'r') as dump_file:
-        results = dict()
-        for line in dump_file:
-            match = re.search(r'Janky frames: (\d+) \(([\d\.]+)%\)', line)
-            if match is not None:
-                results['jankNum'] = int(match.group(1))
-                results['jank_percent'] = float(match.group(2))
+def get_package_name(test_data_dir):
+    package_file = os.path.join(test_data_dir, 'package_name.log')
+
+    with open(package_file, 'r') as package_file:
+        line = package_file.read()
+        package_name = re.search(r'Package Name : ([\w.]+)', line).group(1)
+    return package_name
+
+
+def analyze_battery_stats(test_data_dir):
+     failures = []
+     measurements = {}
+     results = (failures, measurements)
+
+     stats_file = os.path.join(test_data_dir, 'battery.dumpsys.log')
+     if not os.path.exists(stats_file):
+         return results
+
+     with open(stats_file, 'r') as battery_file:
+         line = battery_file.read()
+         uid = re.search(r'top=(\w+):"%s"' % get_package_name(test_data_dir), line).group(1)
+         power_consumption = float(re.search(r'Uid\s' + uid + ': ([\w.]+)', line).group(1))
+         threshold = float(re.search(r'PowerUseThresholdMah : ([\d+\.]+) mah', line).group(1))
+
+         measurements['Battery (mAh)'] = power_consumption
+         if power_consumption > threshold:
+             failures.append('Exceeding power Use. (threshold = %s)' % threshold)
+
+     return results
+
+def analyze_graphic_stats(test_data_dir):
+    failures = []
+    measurements = {}
+    results = (failures, measurements)
+
+    stats_file = os.path.join(test_data_dir, 'gfxinfo.dumpsys.log')
+    if not os.path.exists(stats_file):
         return results
 
+    with open(stats_file, 'r') as graphic_file:
+        line = graphic_file.read()
+        jank_percent = float(re.search(r'Janky frames: (\d+) \(([\d\.]+)%\)', line).group(2))
+        threshold = float(re.search(r'JankPercentageThreshold : ([\d\.]+) %', line).group(1))
+
+        measurements['UI Jank (%)'] = jank_percent
+        if jank_percent > threshold:
+            failures.append('Janky frames is too high. (threshold = %s)' % threshold)
+
+    return results
+
+def analyze_execution_time(test_data_dir):
+    failures = []
+    measurements = {}
+    results = (failures, measurements)
+
+    stats_file = os.path.join(test_data_dir, 'executiontime.log')
+    if not os.path.exists(stats_file):
+        return results
+
+    with open(stats_file, 'r') as time_file:
+        line = time_file.read()
+        execution_time = float(re.search(r'Execution Time : ([\d+\.]+) ms', line).group(1))
+        threshold = float(re.search(r'ThresholdMillis : ([\d+\.]+) ms', line).group(1))
+
+        measurements['Exec Time (ms)'] = execution_time
+        if execution_time > threshold:
+            failures.append('Taking too much time to response. (threshold = %s)' % threshold)
+
+    return results
 
 def analyze_data_files(dest_dir):
     """Analyze data files for issues that indicate a test failure."""
@@ -251,29 +302,18 @@ def analyze_data_files(dest_dir):
 
             for fname in file_list:
                 full_filename = os.path.join(dir_name, fname)
-                if fname == 'gfxinfo.dumpsys.log':
-                    # process gfxinfo for janky frames
-                    dump_results = parse_dump_file(full_filename)
-                    jank_perc = dump_results['jank_percent']
-                    if jank_perc:
-                        if jank_perc > JANK_THRESHOLD:
-                            print ('FAIL: High level of janky frames ' +
-                                   'detected (' + str(jank_perc) + '%)' +
-                                   '. See trace.html for details.')
-                            passed = False
-                    else:
-                        print 'ERROR: No dump results could be found.'
-                        passed = False
-                elif fname == 'test.failure.log':
+                if fname == 'test.failure.log':
                     # process test failure logs
                     print ('FAIL: Test failed. See ' + full_filename +
                            ' for details.')
                     passed = False
+
             if passed:
                 print 'PASS. No issues detected.'
             else:
                 overall_passed = False
-    test_complete_file = os.path.join(dest_dir, 'testdata',
+
+    test_complete_file = os.path.join(dest_dir, 'testdata', 'testdata',
                                       'testRunComplete.log')
     if not os.path.isfile(test_complete_file):
         overall_passed = False
@@ -286,6 +326,77 @@ def analyze_data_files(dest_dir):
         print '\nOVERALL: FAILED. See above for more information.'
         return 1
 
+def show_console_stdout(folder_name, measurements):
+    print 'Test name : ' + remove_common_string(folder_name)
+    print "\n".join(['%s : %s' % (k, v) for k, v in measurements.iteritems()])
+    print ''
+
+def remove_common_string(folder_name):
+    base = folder_name
+    base = base.replace("com.", "") \
+               .replace("google.", "") \
+               .replace("android.", "") \
+               .replace("perftesting.", "")
+    return base
+
+def find_emulaor_name(device_id):
+    #get the port of emulator
+    emulator_port = device_id.split("-")
+    try:
+        # hostname must 'localhost'
+        telnet_connect = telnetlib.Telnet("localhost", emulator_port[1])
+    except:
+        return " "
+
+    #get the android virtual device name
+    telnet_connect.read_until("\n")
+    telnet_connect.write("avd name\n".encode('ascii'))
+    telnet_connect.read_until("\n")
+    telnet_connect.write("exit\n".encode('ascii'))
+    connect_output = telnet_connect.read_all().split('\n')
+    for index, str in enumerate(connect_output):
+        if (str.find("avd name") != -1):
+            emulator_name = connect_output[index+1]
+    return emulator_name.strip()
+
+def xml(dest_dir, device_dir, device_id, device_model, emulator_name):
+    xml_file_dir = os.path.join(dest_dir, 'app', 'build', 'outputs', 'androidTest-results', 'connected')
+    for file in os.listdir(xml_file_dir):
+            xml_file_name = file
+    tree = ElementTree.ElementTree(file = os.path.join(xml_file_dir, xml_file_name))
+
+    for element in tree.findall('testcase'):
+        name = element.get('name')
+        classname = element.get('classname')
+        folder_name = classname + '_' + name
+        test_data_dir = os.path.join(device_dir,'testdata', 'testdata', folder_name)
+
+        # ([failure_messages], {measurement_name: measurement_value})
+        failures = []
+        measurements = {}
+
+        _failures, _measurements = analyze_battery_stats(test_data_dir)
+        failures.extend(_failures)
+        measurements.update(_measurements)
+
+        _failures, _measurements = analyze_graphic_stats(test_data_dir)
+        failures.extend(_failures)
+        measurements.update(_measurements)
+
+        _failures, _measurements = analyze_execution_time(test_data_dir)
+        failures.extend(_failures)
+        measurements.update(_measurements)
+
+        show_console_stdout(folder_name, measurements)
+
+        ElementTree.SubElement(element, 'system-out').text = "\n".join(['<measurement><name>%s</name><value>%s</value></measurement>' % (k, v) for k, v in measurements.iteritems()])
+        if failures:
+            ElementTree.SubElement(element, 'failure').text = '\n'.join(failures)
+
+    if emulator_name.isspace():
+        tree.write(device_model + ".xml")
+    else:
+        tree.write(emulator_name + ".xml")
 
 def main():
     """Run this script with
@@ -297,6 +408,9 @@ def main():
 
     device_id = sys.argv[1:][1] or null
     print 'Using device_id: ' + device_id
+
+    device_model = sys.argv[1:][2] or null
+    print 'Using device_model: ' + device_model
 
     # Organize test output by device in case multiple devices are being tested.
     dest_dir = os.path.join(dest_dir, "perftesting", device_id)
@@ -310,7 +424,7 @@ def main():
     platform_tools = os.path.join(android_home, 'platform-tools')
     current_path = os.environ.get('PATH', '')
     os.environ['PATH'] = (platform_tools if current_path == '' else current_path +
-                          os.pathsep + platform_tools)
+                                                                    os.pathsep + platform_tools)
 
     if not os.path.isdir(android_home):
         print 'Your ANDROID_HOME path do not appear to be set in your environment'
@@ -326,7 +440,7 @@ def main():
 
     # Connects to the current device, returning a MonkeyDevice object
     print 'Waiting for a device to be connected.'
-    device = MonkeyRunner.waitForConnection(5, device_id)
+    device = None
     print 'Device connected.'
 
     # Protip1: Remove the screen lock on your test devices then uncomment
@@ -339,7 +453,6 @@ def main():
     enable_dump_permission(sdk_path, device_id, dest_dir, package_name)
     enable_storage_permission(sdk_path, device_id, dest_dir, package_name)
 
-    open_app(device, package_name)
 
     # Clear the dumpsys data for the next run must be done immediately
     # after open_app().
@@ -350,16 +463,24 @@ def main():
 
     # Device files could be in either location on various devices.
     pull_device_data_files(sdk_path, device_id,
-                           '/storage/emulated/0/Android/data/',
-                            dest_dir, package_name, '1')
+                           '/storage/emulated/0/Documents/',
+                           dest_dir, package_name, '1')
     pull_device_data_files(sdk_path, device_id,
-                           '/storage/emulated/legacy/Android/data/',
+                           '/storage/emulated/legacy/Documents/',
                            dest_dir, package_name, '2')
 
     # Protip1: See comment above.
     # device.press("KEYCODE_POWER", "DOWN_AND_UP")
 
     analyze_data_files(dest_dir)
+
+    # adding janky frames and execution time to the xml file
+    dest_dir = sys.argv[1:][0] or '.'
+    device_dir = os.path.join(dest_dir, "perftesting", device_id)
+
+    emulator_name = find_emulaor_name(device_id)
+
+    xml(dest_dir, device_dir, device_id, device_model, emulator_name)
 
 
 if __name__ == '__main__':
