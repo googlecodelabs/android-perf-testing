@@ -66,7 +66,15 @@ public class RunLocalPerfTestsTask extends DefaultTask {
 //            monkeyExt = '.bat'
 //        }
 //
-//        def monkeyPath = Paths.get(sdkDir, "tools", "monkeyrunner" + monkeyExt).toAbsolutePath().toString()
+//        def toolsDir = Paths.get(sdkDir, "tools").toAbsolutePath().toString()
+//
+//        // Check for new SDK folder layout
+//        def toolsBinDir = Paths.get(sdkDir, "tools", "bin")
+//        if (toolsBinDir.toFile().exists()) {
+//            toolsDir = toolsBinDir.toAbsolutePath().toString()
+//        }
+//
+//        def monkeyPath = Paths.get(toolsDir, "monkeyrunner" + monkeyExt).toAbsolutePath().toString()
 //        def rootDir = getProject().getRootDir().getAbsolutePath()
 //        def monkeyScriptPath = Paths.get(rootDir, "run_perf_tests.py").toAbsolutePath().toString()
 //        processBuilder.command(monkeyPath, monkeyScriptPath, rootDir, mDeviceId)
