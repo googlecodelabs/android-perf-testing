@@ -24,6 +24,7 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.bumptech.glide.request.RequestOptions;
 import com.google.android.perftesting.R;
 
 import com.bumptech.glide.Glide;
@@ -41,8 +42,8 @@ public class ContactsArrayAdapterFixed extends ArrayAdapter<Contact> {
         super(context, 0, contacts);
     }
 
-    @ Override
-    public View getView(int position, View convertView, ViewGroup parent ) {
+    @Override
+    public View getView(int position, View convertView, ViewGroup parent) {
 
         Contact contact = getItem(position);
         LayoutInflater inflater = LayoutInflater.from(getContext());
@@ -56,7 +57,8 @@ public class ContactsArrayAdapterFixed extends ArrayAdapter<Contact> {
 
         Glide.with(contactImage.getContext())
                 .load(R.drawable.bbq)
-                .fitCenter()
+                .apply(new RequestOptions()
+                        .fitCenter())
                 .into(contactImage);
 
         contactName.setText(contact.getName());

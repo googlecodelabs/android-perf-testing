@@ -24,6 +24,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.bumptech.glide.request.RequestOptions;
 import com.google.android.perftesting.R;
 
 import com.bumptech.glide.Glide;
@@ -63,7 +64,8 @@ public class ContactsRecyclerAdapter extends RecyclerView.Adapter<ContactsRecycl
         textView.setText(contact.getName());
         Glide.with(contactPic.getContext())
                 .load(R.drawable.bbq)
-                .fitCenter()
+                .apply(new RequestOptions()
+                        .fitCenter())
                 .into(contactPic);
     }
 
