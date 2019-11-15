@@ -1,17 +1,17 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 27
-    buildToolsVersion '26.0.3'
+    compileSdkVersion 28
+    buildToolsVersion '28.0.3'
 
     defaultConfig {
         applicationId "com.google.android.perftesting"
         minSdkVersion 14
-        targetSdkVersion 27
+        targetSdkVersion 28
         versionCode 1
         versionName "1.0"
 
-        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         testHandleProfiling true
         testFunctionalTest true
     }
@@ -32,20 +32,20 @@ android {
 }
 
 dependencies {
-    String supportLibVersion = "27.0.2"
-    compile fileTree(include: ['*.jar'], dir: 'libs')
-    compile "com.android.support:appcompat-v7:${supportLibVersion}"
-    compile "com.android.support:recyclerview-v7:${supportLibVersion}"
-    compile "com.android.support:support-v4:${supportLibVersion}"
-    compile 'com.github.bumptech.glide:glide:3.8.0'
-    // TODO(developer): Comment in the following dependencies to enable Espresso and related libraries in this project.
-    // Force the use of a specific version of the annotations library because the app compile
-    // dependencies require this version transitively, but an androidTestCompile dependency
-    // requires a different version. See http://goo.gl/iH4WDq for more info.
-    //     androidTestCompile "com.android.support:support-annotations:${supportLibVersion}"
-    //     androidTestCompile 'com.android.support.test:runner:0.5'
-    //     androidTestCompile 'com.android.support.test:rules:0.5'
-    //     androidTestCompile 'com.android.support.test.espresso:espresso-core:2.2.1'
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:1.0.2"
+    implementation "androidx.recyclerview:recyclerview:1.0.0"
+    implementation "androidx.legacy:legacy-support-v4:1.0.0"
+    implementation 'com.github.bumptech.glide:glide:4.8.0'
+//     TODO(developer): Comment in the following dependencies to enable Espresso and related libraries in this project.
+//     Force the use of a specific version of the annotations library because the app compile
+//     dependencies require this version transitively, but an androidTestCompile dependency
+//     requires a different version. See http://goo.gl/iH4WDq for more info.
+
+    androidTestImplementation "androidx.annotation:annotation:1.0.0"
+    androidTestImplementation 'androidx.test:runner:1.1.0'
+    androidTestImplementation 'androidx.test:rules:1.1.0'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.1.0'
 }
 
 // Create performance testing tasks for all connected Android devices using a Gradle plugin defined
